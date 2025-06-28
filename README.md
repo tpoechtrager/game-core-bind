@@ -50,7 +50,7 @@ Config = {
 
 `gcb.lua` Contains the core functionality exposed to Lua. You usually don't need to modify this.
 
-`` Add your games and define per-game behavior. Already contains a broad range of games.
+Add your games and define per-game behavior. Already contains a broad range of games.
 
 ```
 Games = {
