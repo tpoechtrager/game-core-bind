@@ -19,14 +19,13 @@ namespace tools {
 
 std::time_t GetFileTimestamp(const std::string& path) {
   std::error_code ec;
-  auto ftime = fs::last_write_time(path, ec);
+  auto ftime = std::filesystem::last_write_time(path, ec);
   if (ec) {
     return 0;
   }
 
-  auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
-    ftime - fs::file_time_type::clock::now() + std::chrono::system_clock::now());
-  return std::chrono::system_clock::to_time_t(sctp);
+  auto s = std::chrono::time_point_cast<std::chrono::seconds>(ftime).time_since_epoch();
+  return s.count();
 }
 
 void SetWorkingDirToExePath() {
