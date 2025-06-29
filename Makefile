@@ -75,7 +75,9 @@ all:
 	rm -f $(OBJS)
 	$(MAKE) $(TARGET)
 
-$(TARGET): $(OBJS) $(if $(filter mingw,$(PLATFORM)),$(LUA_LIB))
+$(OBJS): $(LUA_LIB)
+
+$(TARGET): $(OBJS) $(LUA_LIB)
 	$(CXX) $(OBJS) $(LUA_LIB) -o $@ $(LDFLAGS)
 ifeq ($(PLATFORM), mingw)
 	$(STRIP) $@
