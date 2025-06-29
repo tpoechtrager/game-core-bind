@@ -13,8 +13,6 @@
 #include <cstring>
 #endif
 
-namespace fs = std::filesystem;
-
 namespace tools {
 
 std::time_t GetFileTimestamp(const std::string& path) {

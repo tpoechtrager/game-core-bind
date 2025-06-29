@@ -1,17 +1,21 @@
 // game-watcher.cpp
 //
 // Detects running games by scanning the process list (Windows & Linux).
-// Triggers Lua events when a known game starts or stops.
-// Additionally detects:
-// - If the recognized game is in the foreground (active window or any fullscreen application active)
-// - Foreground/background transitions trigger Lua events.
+// Tracks all matching processes (supports multiple instances of the same game).
+// Triggers Lua events individually for each process:
+// - Game start when a matching process is found
+// - Game stop when a process terminates
 //
-// Only one game is monitored at a time. Once detected, its state remains tracked until the game stops.
+// Additionally on Windows:
+// - Detects if any tracked game window is in the foreground
+// - Alternatively considers any fullscreen window as foreground
+// - Foreground/background transitions trigger Lua events
 
 #include "game-watcher.h"
 #include "games.h"
 #include "lua.h"
 #include <string>
+#include <vector>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -25,33 +29,13 @@
 
 namespace gamewatcher {
 
-bool GameRunning = false;
-static bool wasRunning = false;
-static const games::Game* activeGame = nullptr;
-static int activePid = 0;
+struct ProcessInfo {
+  int pid;
+  const games::Game* game;
+};
+
+static std::vector<ProcessInfo> tracked;
 static bool isForeground = false;
-
-void ResetState() {
-  if (GameRunning && activeGame) {
-    lua::TriggerGameStop(activePid, activeGame->name, activeGame->binary);
-  }
-  GameRunning = false;
-  activeGame = nullptr;
-  activePid = 0;
-  wasRunning = false;
-  isForeground = false;
-}
-
-static bool CheckProcess(const std::string& exeName, int pid) {
-  const games::Game* game = games::GetGameByBinary(exeName);
-  if (game && !GameRunning) {
-    GameRunning = true;
-    activeGame = game;
-    activePid = pid;
-    return true;
-  }
-  return false;
-}
 
 #ifdef _WIN32
 static bool IsAnyFullscreen() {
@@ -73,28 +57,41 @@ static bool IsAnyFullscreen() {
 }
 #endif
 
-void Process() {
-  bool runningBefore = GameRunning;
-  const games::Game* gameBefore = activeGame;
-  int pidBefore = activePid;
+void ResetState() {
+  for (const auto& proc : tracked) {
+    lua::TriggerGameStop(proc.pid, proc.game->name, proc.game->binary);
+  }
+  tracked.clear();
+  isForeground = false;
+}
 
-  GameRunning = false;
-  activeGame = nullptr;
-  activePid = 0;
+static bool IsAlreadyTracked(int pid) {
+  for (const auto& proc : tracked) {
+    if (proc.pid == pid) return true;
+  }
+  return false;
+}
+
+void Process() {
+  std::vector<ProcessInfo> found;
 
 #ifdef _WIN32
   HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-  if (snapshot == INVALID_HANDLE_VALUE) {
-    return;
-  }
+  if (snapshot == INVALID_HANDLE_VALUE) return;
 
-  PROCESSENTRY32 entry = { };
+  PROCESSENTRY32 entry = {};
   entry.dwSize = sizeof(PROCESSENTRY32);
 
   if (Process32First(snapshot, &entry)) {
     do {
-      if (CheckProcess(entry.szExeFile, static_cast<int>(entry.th32ProcessID))) {
-        break;
+      const games::Game* game = games::GetGameByBinary(entry.szExeFile);
+      if (game) {
+        int pid = static_cast<int>(entry.th32ProcessID);
+        found.push_back({ pid, game });
+        if (!IsAlreadyTracked(pid)) {
+          tracked.push_back({ pid, game });
+          lua::TriggerGameStart(pid, game->name, game->binary);
+        }
       }
     } while (Process32Next(snapshot, &entry));
   }
@@ -103,87 +100,85 @@ void Process() {
 
 #else
   DIR* dir = opendir("/proc");
-  if (!dir) {
-    return;
-  }
+  if (!dir) return;
 
   struct dirent* entry;
   while ((entry = readdir(dir)) != nullptr) {
-    if (entry->d_type != DT_DIR) {
-      continue;
-    }
+    if (entry->d_type != DT_DIR) continue;
 
     std::string pidStr = entry->d_name;
-    if (pidStr.find_first_not_of("0123456789") != std::string::npos) {
-      continue;
-    }
+    if (pidStr.find_first_not_of("0123456789") != std::string::npos) continue;
 
     std::string cmdPath = "/proc/" + pidStr + "/comm";
     std::ifstream cmdFile(cmdPath);
-    if (!cmdFile.is_open()) {
-      continue;
-    }
+    if (!cmdFile.is_open()) continue;
 
     std::string exeName;
     std::getline(cmdFile, exeName);
     cmdFile.close();
 
-    if (CheckProcess(exeName, std::stoi(pidStr))) {
-      closedir(dir);
-      break;
+    const games::Game* game = games::GetGameByBinary(exeName);
+    if (game) {
+      int pid = std::stoi(pidStr);
+      found.push_back({ pid, game });
+      if (!IsAlreadyTracked(pid)) {
+        tracked.push_back({ pid, game });
+        lua::TriggerGameStart(pid, game->name, game->binary);
+      }
     }
   }
 
   closedir(dir);
 #endif
 
-  if (GameRunning && !runningBefore) {
-    if (activeGame) {
-      lua::TriggerGameStart(activePid, activeGame->name, activeGame->binary);
-
-#ifdef _WIN32
-      HWND foreground = GetForegroundWindow();
-      if (foreground) {
-        DWORD pid = 0;
-        GetWindowThreadProcessId(foreground, &pid);
-        isForeground = (static_cast<int>(pid) == activePid) || IsAnyFullscreen();
-        if (isForeground) {
-          lua::TriggerGameForeground(activePid, activeGame->name, activeGame->binary);
-        }
+  // Stopped processes erkennen
+  for (auto it = tracked.begin(); it != tracked.end();) {
+    bool stillRunning = false;
+    for (const auto& proc : found) {
+      if (proc.pid == it->pid) {
+        stillRunning = true;
+        break;
       }
-#endif
     }
-  }
-
-  if (!GameRunning && runningBefore) {
-    if (gameBefore) {
-      lua::TriggerGameStop(pidBefore, gameBefore->name, gameBefore->binary);
+    if (!stillRunning) {
+      lua::TriggerGameStop(it->pid, it->game->name, it->game->binary);
+      it = tracked.erase(it);
+    } else {
+      ++it;
     }
   }
 
 #ifdef _WIN32
-  if (GameRunning && activePid) {
-    HWND foreground = GetForegroundWindow();
-    if (foreground) {
-      DWORD pid = 0;
-      GetWindowThreadProcessId(foreground, &pid);
+  // Foreground detection
+  HWND foreground = GetForegroundWindow();
+  if (foreground) {
+    DWORD pid = 0;
+    GetWindowThreadProcessId(foreground, &pid);
 
-      bool gameWindowActive = (static_cast<int>(pid) == activePid);
-      bool fullscreenActive = IsAnyFullscreen();
-      bool nowForeground = gameWindowActive || fullscreenActive;
-
-      if (nowForeground && !isForeground) {
-        lua::TriggerGameForeground(activePid, activeGame->name, activeGame->binary);
+    bool gameWindowActive = false;
+    for (const auto& proc : tracked) {
+      if (proc.pid == static_cast<int>(pid)) {
+        gameWindowActive = true;
+        break;
       }
-      if (!nowForeground && isForeground) {
-        lua::TriggerGameBackground(activePid, activeGame->name, activeGame->binary);
-      }
-      isForeground = nowForeground;
     }
+
+    bool fullscreenActive = IsAnyFullscreen();
+    bool nowForeground = gameWindowActive || fullscreenActive;
+
+    if (nowForeground && !isForeground) {
+      for (const auto& proc : tracked) {
+        lua::TriggerGameForeground(proc.pid, proc.game->name, proc.game->binary);
+      }
+    }
+    if (!nowForeground && isForeground) {
+      for (const auto& proc : tracked) {
+        lua::TriggerGameBackground(proc.pid, proc.game->name, proc.game->binary);
+      }
+    }
+    isForeground = nowForeground;
   }
 #endif
-
-  wasRunning = GameRunning;
 }
 
 } // namespace gamewatcher

@@ -27,6 +27,10 @@ end
 function gcb.setProcessThreadsIfDifferent(pid, targetThreads)
   local currentThreads = gcb.getProcessThreads(pid)
 
+  if #currentThreads == 0 then
+    return -- PID likely no longer exists, skip
+  end
+
   local function listsDiffer(a, b)
     if #a ~= #b then return true end
     local lookup = {}
@@ -90,21 +94,21 @@ function gcb.setGameThreads(pid, settings)
   end
 end
 
--- Applies current game affinity based on settings
-function gcb.setCurrentGameCpuAffinity()
-  if not gcb.currentGame or not gcb.currentGame.name then
-    print("No active game, skipping CPU affinity")
+-- Applies game affinity based on settings
+function gcb.setGameCpuAffinity(gamePid, gameName)
+  if not gamePid or not gameName then
+    print("No valid game data, skipping CPU affinity")
     return
   end
 
-  local gameData = getGame(gcb.currentGame.name)
+  local gameData = getGame(gameName)
   if not gameData then
-    print("No game settings found for: " .. gcb.currentGame.name)
+    print("No game settings found for: " .. gameName)
     return
   end
 
   local binding = gameData["Core-Binding"] or {}
-  gcb.setGameThreads(gcb.currentGame.pid, { Mode = binding.Mode or "STANDARD", SMT = binding.SMT })
+  gcb.setGameThreads(gamePid, { Mode = binding.Mode or "STANDARD", SMT = binding.SMT })
 end
 
 -- Saves monitor states for later restoration
@@ -128,5 +132,28 @@ function gcb.enableNonPrimaryMonitors()
     if not m.isPrimary then
       gcb.enableMonitor(m)
     end
+  end
+end
+
+-- Custom LUA code file
+
+local customFile = "custom.lua"
+local customTimestamp = 0
+
+function gcb.loadCustomLua()
+  local f = io.open(customFile, "r")
+  if f then
+    f:close()
+    dofile(customFile)
+    customTimestamp = gcb.getFileTimestamp(customFile)
+    print("Loaded " .. customFile)
+  end
+end
+
+function gcb.reloadCustomLuaIfChanged()
+  local ts = gcb.getFileTimestamp(customFile)
+  if ts > 0 and ts ~= customTimestamp then
+    print(customFile .. " changed, reloading...")
+    gcb.loadCustomLua()
   end
 end

@@ -1,50 +1,42 @@
-gcb.currentGame = nil
-
-local customFile = "custom.lua"
-local customTimestamp = 0
-
-function gcb.loadCustomLua()
-  local f = io.open(customFile, "r")
-  if f then
-    f:close()
-    dofile(customFile)
-    customTimestamp = gcb.getFileTimestamp(customFile)
-    print("Loaded " .. customFile)
-  end
-end
-
--- Initial load
+-- Initial load of Custom LUA
 gcb.loadCustomLua()
 
+gcb.currentGames = {}
+
 gcb.onTick = function()
-  if gcb.currentGame and Config.SetCpuAffinity then
-    gcb.setCurrentGameCpuAffinity()
+  if Config.SetCpuAffinity then
+    for _, game in ipairs(gcb.currentGames) do
+        gcb.setGameCpuAffinity(game.pid, game.name)
+    end
   end
 
-  local ts = gcb.getFileTimestamp(customFile)
-
-  if ts > 0 and ts ~= customTimestamp then
-    print(customFile .. " changed, reloading...")
-    gcb.loadCustomLua()
-  end
+  gcb.reloadCustomLuaIfChanged()
 end
 
 gcb.onGameStart = function(pid, name, binary)
+  table.insert(gcb.currentGames, {
+    pid = pid,
+    name = name,
+    binary = binary
+  })
+
   print("Game started: " .. name .. " (" .. binary .. "), PID: " .. pid)
 
-  -- Look up the game in the Games table to check for an initialization wait time
   local gameData = getGame(name)
   if gameData and gameData["Init-Wait"] and gameData["Init-Wait"].WaitMs then
-    -- Sleep for the specified milliseconds before continuing
     print("Sleeping " .. gameData["Init-Wait"].WaitMs .. " ms")
     gcb.sleepMs(gameData["Init-Wait"].WaitMs)
   end
 
-  gcb.currentGame = {
-    pid = pid,
-    name = name,
-    binary = binary
-  }
+  -- Always set affinity, even if the same game runs multiple times
+  if Config.SetCpuAffinity then
+    gcb.setGameCpuAffinity(pid, name)
+  end
+
+  -- Prevent duplicate handling if multiple instances are detected
+  if #gcb.currentGames >= 2 then
+    return
+  end
 
   if Config.DisableDesktopEffects then
     gcb.disableDesktopEffects()
@@ -56,10 +48,6 @@ gcb.onGameStart = function(pid, name, binary)
     gcb.disableNonPrimaryMonitors()
   end
 
-  if Config.SetCpuAffinity then
-    gcb.setCurrentGameCpuAffinity()
-  end
-
   if custom and type(custom.gameStart) == "function" then
     custom.gameStart(pid, name, binary)
   end
@@ -69,7 +57,18 @@ end
 gcb.onGameStop = function(pid, name, binary)
   print("Game stopped: " .. name .. " (" .. binary .. "), PID: " .. pid)
 
-  gcb.currentGame = nil
+  -- Only handle the first instance of a game
+  if not gcb.currentGames[1] or gcb.currentGames[1].pid ~= pid then
+    for i, game in ipairs(gcb.currentGames) do
+      if game.pid == pid then
+        table.remove(gcb.currentGames, i)
+        break
+      end
+    end
+    return
+  end
+
+  table.remove(gcb.currentGames, 1)
 
   if Config.DisableNonPrimaryDisplays then
     print("Restoring monitor state...")
@@ -84,6 +83,7 @@ gcb.onGameStop = function(pid, name, binary)
     custom.gameStop(pid, name, binary)
   end
 end
+
 
 gcb.onGameForeground = function(pid, name, binary)
   if custom and type(custom.gameForeground) == "function" then
