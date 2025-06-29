@@ -130,14 +130,3 @@ function gcb.enableNonPrimaryMonitors()
     end
   end
 end
-
-function gcb.dirExists(path)
-  local ok, err, code = os.rename(path, path)
-  if not ok then
-    if code == 13 then -- Permission denied, but exists (Windows)
-      return true
-    end
-    return false
-  end
-  return true
-end

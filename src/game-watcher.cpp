@@ -16,6 +16,7 @@
 #ifdef _WIN32
 #include <windows.h>
 #include <tlhelp32.h>
+#include <cstring>
 #else
 #include <dirent.h>
 #include <unistd.h>
@@ -59,9 +60,10 @@ static bool IsAnyFullscreen() {
 
   RECT windowRect;
   if (!GetWindowRect(hwnd, &windowRect)) return false;
-
   HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTOPRIMARY);
-  MONITORINFO mi = { sizeof(mi) };
+  MONITORINFO mi;
+  std::memset(&mi, 0, sizeof(mi));
+  mi.cbSize = sizeof(mi);
   if (!GetMonitorInfo(monitor, &mi)) return false;
 
   return windowRect.left <= mi.rcMonitor.left &&

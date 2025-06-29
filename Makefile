@@ -9,25 +9,43 @@ endif
 LUA_VERSION = 5.4.8
 
 ifeq ($(PLATFORM), mingw)
-  CXX := $(shell which x86_64-w64-mingw32-clang++ 2>/dev/null || which x86_64-w64-mingw32-g++)
-  CC := $(shell which x86_64-w64-mingw32-clang 2>/dev/null || which x86_64-w64-mingw32-gcc)
-  STRIP := $(shell which x86_64-w64-mingw32-strip)
-  LUA_INCLUDE := -Ilib/lua-$(LUA_VERSION)/src
-  LUA_LIB := lib/lua-$(LUA_VERSION)/src/liblua.a
-  STATIC_FLAGS := -static-libgcc -static-libstdc++ -pthread
-  PLATFORM_LIBS := -lws2_32
+
+ARCH ?= x86_64
+
+ifeq ($(USE_GCC), 1)
+  CXX := $(shell which $(ARCH)-w64-mingw32-g++)
+  CC := $(shell which $(ARCH)-w64-mingw32-gcc)
 else
-  CXX := clang++
-  CC := clang
-  STRIP := strip
-  LUA_INCLUDE :=
-  LUA_LIB := -llua
-  STATIC_FLAGS :=
-  PLATFORM_LIBS :=
+  CXX := $(shell which $(ARCH)-w64-mingw32-clang++ 2>/dev/null || which $(ARCH)-w64-mingw32-g++)
+  CC := $(shell which $(ARCH)-w64-mingw32-clang 2>/dev/null || which $(ARCH)-w64-mingw32-gcc)
 endif
 
-CXXFLAGS = -Wall -Wextra -O2 $(LUA_INCLUDE)
-LDFLAGS = $(STATIC_FLAGS) $(PLATFORM_LIBS)
+STRIP := $(shell which $(ARCH)-w64-mingw32-strip)
+LUA_INCLUDE := -Ilib/$(ARCH)/lua-$(LUA_VERSION)/src
+LUA_LIB := lib/$(ARCH)/lua-$(LUA_VERSION)/src/liblua.a
+STATIC_FLAGS := -static-libgcc -static-libstdc++ -pthread -lws2_32
+
+else
+
+ARCH ?= $(shell uname -m)
+CXX := clang++
+CC := clang
+STRIP := strip
+LUA_INCLUDE :=
+LUA_LIB := -llua
+STATIC_FLAGS :=
+
+ifeq ($(ARCH), i686)
+  STATIC_FLAGS += -m32
+endif
+ifeq ($(ARCH), x86_64)
+  STATIC_FLAGS += -m64
+endif
+
+endif
+
+CXXFLAGS = -Wall -Wextra -O3 -fno-exceptions $(LUA_INCLUDE)
+LDFLAGS = $(STATIC_FLAGS)
 
 SRCS = src/cpu.cpp \
        src/lua.cpp \
@@ -41,6 +59,7 @@ SRCS = src/cpu.cpp \
        src/display.cpp \
        src/network.cpp \
        src/main.cpp
+
 OBJS = $(SRCS:.cpp=.o)
 
 EXT :=
@@ -65,12 +84,12 @@ endif
 %.o: %.cpp cpu.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-lib/lua-$(LUA_VERSION)/src/liblua.a:
-	@echo "Building Lua $(LUA_VERSION) statically..."
-	mkdir -p lib
-	cd lib && curl -LO https://www.lua.org/ftp/lua-$(LUA_VERSION).tar.gz
-	cd lib && tar -xzf lua-$(LUA_VERSION).tar.gz
-	cd lib/lua-$(LUA_VERSION) && make mingw CC="$(CC)"
+lib/$(ARCH)/lua-$(LUA_VERSION)/src/liblua.a:
+	@echo "Building Lua $(LUA_VERSION) statically for $(ARCH)..."
+	mkdir -p lib/$(ARCH)
+	cd lib/$(ARCH) && curl -LO https://www.lua.org/ftp/lua-$(LUA_VERSION).tar.gz
+	cd lib/$(ARCH) && tar -xzf lua-$(LUA_VERSION).tar.gz
+	cd lib/$(ARCH)/lua-$(LUA_VERSION) && make mingw CC="$(CC)"
 
 clean:
 	rm -f $(OBJS) $(TARGET)
