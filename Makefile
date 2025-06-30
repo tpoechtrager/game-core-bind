@@ -45,6 +45,9 @@ endif
 endif
 
 CXXFLAGS = -Wall -Wextra -O3 -fno-exceptions $(LUA_INCLUDE)
+ifeq ($(RUN_AS_ADMIN), 1)
+  CXXFLAGS += -DRUN_AS_ADMIN
+endif
 LDFLAGS = $(STATIC_FLAGS)
 
 SRCS = src/cpu.cpp \
@@ -58,6 +61,7 @@ SRCS = src/cpu.cpp \
        src/console.cpp \
        src/display.cpp \
        src/network.cpp \
+       src/admin.cpp \
        src/main.cpp
 
 OBJS = $(SRCS:.cpp=.o)

@@ -6,7 +6,7 @@ gcb.currentGames = {}
 gcb.onTick = function()
   if Config.SetCpuAffinity then
     for _, game in ipairs(gcb.currentGames) do
-        gcb.setGameCpuAffinity(game.pid, game.name)
+      gcb.setGameCpuAffinity(game.pid, game.name)
     end
   end
 

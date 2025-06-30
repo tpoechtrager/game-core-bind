@@ -3,6 +3,7 @@
 #include "game-watcher.h"
 #include "tools.h"
 #include "network.h"
+#include "admin.h"
 #include <thread>
 #include <chrono>
 #include <filesystem>
@@ -49,6 +50,9 @@ static bool LuaFilesChanged() {
 }
 
 int main() {
+#ifdef RUN_AS_ADMIN
+  admin::EnsureRunningAsAdmin();
+#endif
   tools::SetWorkingDirToExePath();
 
   network::Init();

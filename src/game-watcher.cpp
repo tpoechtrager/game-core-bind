@@ -131,7 +131,6 @@ void Process() {
   closedir(dir);
 #endif
 
-  // Stopped processes erkennen
   for (auto it = tracked.begin(); it != tracked.end();) {
     bool stillRunning = false;
     for (const auto& proc : found) {
