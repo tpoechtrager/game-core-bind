@@ -1,0 +1,134 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Quelldateien">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Headerdateien">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Ressourcendateien">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Quelldateien\lua">
+      <UniqueIdentifier>{22a01ee6-0985-4602-ae14-97f758ef460d}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\admin.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\console.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\cpu.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\desktop.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\display.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\games.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\game-watcher.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\lua.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\lua-bindings.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\main.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\network.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\scheduler.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\tools.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\tray.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\messagebox.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\admin.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\console.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\cpu.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\desktop.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\display.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\games.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\game-watcher.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\lua.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\lua-bindings.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\main.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\network.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\scheduler.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\tools.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\tray.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\messagebox.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\config.lua">
+      <Filter>Quelldateien\lua</Filter>
+    </None>
+    <None Include="..\custom.example.lua">
+      <Filter>Quelldateien\lua</Filter>
+    </None>
+    <None Include="..\games.lua">
+      <Filter>Quelldateien\lua</Filter>
+    </None>
+    <None Include="..\gcb.lua">
+      <Filter>Quelldateien\lua</Filter>
+    </None>
+    <None Include="..\main.lua">
+      <Filter>Quelldateien\lua</Filter>
+    </None>
+    <None Include="..\tray.lua">
+      <Filter>Quelldateien\lua</Filter>
+    </None>
+  </ItemGroup>
+</Project>
