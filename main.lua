@@ -1,7 +1,15 @@
+if Config.EnsureRunningAsAdmin and not gcb.isRunningAsAdmin() then
+  print("Not running as admin, restarting with elevated privileges...")
+  gcb.restartAsAdmin()
+  return
+end
+
 -- Initial load of Custom LUA
 gcb.loadCustomLua()
 
 gcb.currentGames = {}
+
+local askedForAdmin = false
 
 gcb.onTick = function()
   if Config.SetCpuAffinity then
@@ -12,6 +20,8 @@ gcb.onTick = function()
 
   gcb.reloadCustomLuaIfChanged()
 end
+
+local askedForAdmin = false
 
 gcb.onGameStart = function(pid, name, binary)
   table.insert(gcb.currentGames, {
@@ -30,7 +40,14 @@ gcb.onGameStart = function(pid, name, binary)
 
   -- Always set affinity, even if the same game runs multiple times
   if Config.SetCpuAffinity then
-    gcb.setGameCpuAffinity(pid, name)
+    local code = gcb.setGameCpuAffinity(pid, name)
+    if code == gcb.SET_GAME_CPU_AFFINITY_PERMISSION_DENIED and not askedForAdmin then
+      askedForAdmin = true
+      if gcb.showYesNoBox("GCB: Permission Denied", 
+        string.format("Failed to set CPU affinity for '%s'.\nRestart GCB as admin?", name)) then
+        gcb.restartAsAdmin()
+      end
+    end
   end
 
   -- Prevent duplicate handling if multiple instances are detected

@@ -7,6 +7,10 @@
 #include "display.h"
 #include "network.h"
 #include "tools.h"
+#include "tray.h"
+#include "messagebox.h"
+#include "admin.h"
+#include "main.h"
 
 extern "C" {
 #include <lauxlib.h>
@@ -113,22 +117,30 @@ static int BindProcessToThreads(lua_State* L) {
     lua_pop(L, 1);
   }
 
-  bool result = scheduler::BindProcessToThreads(pid, threads);
-  lua_pushboolean(L, result);
+  int result = scheduler::BindProcessToThreads(pid, threads);
+  lua_pushinteger(L, result);
   return 1;
 }
 
 static int GetProcessThreads(lua_State* L) {
   int pid = luaL_checkinteger(L, 1);
-  std::vector<int> threads = scheduler::GetProcessThreads(pid);
+  scheduler::GetThreadsResult res = scheduler::GetProcessThreads(pid);
 
   lua_newtable(L);
+  lua_pushstring(L, "code");
+  lua_pushinteger(L, static_cast<int>(res.code));
+  lua_settable(L, -3);
+
+  lua_pushstring(L, "threads");
+  lua_newtable(L);
+
   int index = 1;
-  for (int t : threads) {
+  for (int t : res.threads) {
     lua_pushinteger(L, t);
     lua_rawseti(L, -2, index++);
   }
 
+  lua_settable(L, -3);
   return 1;
 }
 
@@ -273,6 +285,109 @@ static int SleepMs(lua_State* L) {
   return 0;
 }
 
+// Tray
+
+static int TrayInit(lua_State* L) {
+  const char* tooltip = luaL_checkstring(L, 1);
+  tray::Init(tooltip);
+  return 0;
+}
+
+static int TrayDestroy(lua_State*) {
+  tray::Destroy();
+  return 0;
+}
+
+static int TrayAddMenuItem(lua_State* L) {
+  const char* text = luaL_checkstring(L, 1);
+  int id = luaL_checkinteger(L, 2);
+  tray::AddMenuItem(text, id);
+  return 0;
+}
+
+static int TrayAddCheckableMenuItem(lua_State* L) {
+  const char* text = luaL_checkstring(L, 1);
+  int id = luaL_checkinteger(L, 2);
+  bool checked = lua_toboolean(L, 3);
+  tray::AddCheckableMenuItem(text, id, checked);
+  return 0;
+}
+
+static int TraySetMenuChecked(lua_State* L) {
+  int id = luaL_checkinteger(L, 1);
+  bool checked = lua_toboolean(L, 2);
+  tray::SetMenuItemChecked(id, checked);
+  return 0;
+}
+
+static int TrayIsMenuChecked(lua_State* L) {
+  int id = luaL_checkinteger(L, 1);
+  lua_pushboolean(L, tray::IsMenuItemChecked(id));
+  return 1;
+}
+
+static int TrayCreateSubMenu(lua_State* L) {
+  HMENU submenu = tray::CreateSubMenu();
+  lua_pushlightuserdata(L, submenu);
+  return 1;
+}
+
+static int TrayAddMenuItemToSubMenu(lua_State* L) {
+  HMENU submenu = (HMENU)lua_touserdata(L, 1);
+  const char* text = luaL_checkstring(L, 2);
+  int id = luaL_checkinteger(L, 3);
+  tray::AddMenuItemToSubMenu(submenu, text, id);
+  return 0;
+}
+
+static int TrayAddSubMenu(lua_State* L) {
+  const char* text = luaL_checkstring(L, 1);
+  HMENU submenu = (HMENU)lua_touserdata(L, 2);
+  tray::AddSubMenu(text, submenu);
+  return 0;
+}
+
+// Messagebox
+
+static int ShowMessageBox(lua_State* L) {
+  const char* title = luaL_checkstring(L, 1);
+  const char* text = luaL_checkstring(L, 2);
+  messagebox::Show(title, text);
+  return 0;
+}
+
+static int ShowYesNoBox(lua_State* L) {
+  const char* title = luaL_checkstring(L, 1);
+  const char* text = luaL_checkstring(L, 2);
+  bool result = messagebox::ConfirmYesNo(title, text);
+  lua_pushboolean(L, result);
+  return 1;
+}
+
+// Admin
+
+static int IsRunningAsAdmin(lua_State* L) {
+  lua_pushboolean(L, admin::IsRunningAsAdmin());
+  return 1;
+}
+
+// Main
+
+static int SetShutdown(lua_State*) {
+  shutdownRequest = true;
+  return 0;
+}
+
+static int SetRestart(lua_State*) {
+  restartRequest = true;
+  return 0;
+}
+
+static int SetRestartAsAdmin(lua_State*) {
+  restartAsAdminRequest = true;
+  return 0;
+}
+
 void Register(lua_State* L) {
   lua_getglobal(L, "gcb");
 
@@ -300,8 +415,35 @@ void Register(lua_State* L) {
   lua_setfield(L, -2, "enableDesktopEffects");
 
   // Scheduler
+  lua_pushinteger(L, scheduler::BIND_SUCCESS);
+  lua_setfield(L, -2, "PROCESS_BIND_SUCCESS");
+
+  lua_pushinteger(L, scheduler::BIND_INVALID_THREAD_INDEX);
+  lua_setfield(L, -2, "PROCESS_BIND_INVALID_THREAD_INDEX");
+
+  lua_pushinteger(L, scheduler::BIND_OPEN_PROCESS_FAILED);
+  lua_setfield(L, -2, "PROCESS_BIND_OPEN_PROCESS_FAILED");
+
+  lua_pushinteger(L, scheduler::BIND_PERMISSION_DENIED);
+  lua_setfield(L, -2, "PROCESS_BIND_PERMISSION_DENIED");
+
+  lua_pushinteger(L, scheduler::BIND_SETAFFINITY_FAILED);
+  lua_setfield(L, -2, "PROCESS_BIND_SETAFFINITY_FAILED");
+
   lua_pushcfunction(L, BindProcessToThreads);
   lua_setfield(L, -2, "bindProcessToThreads");
+
+  lua_pushinteger(L, scheduler::GET_THREADS_SUCCESS);
+  lua_setfield(L, -2, "PROCESS_GET_THREADS_SUCCESS");
+
+  lua_pushinteger(L, scheduler::GET_THREADS_OPEN_PROCESS_FAILED);
+  lua_setfield(L, -2, "PROCESS_GET_THREADS_OPEN_PROCESS_FAILED");
+
+  lua_pushinteger(L, scheduler::GET_THREADS_QUERY_FAILED);
+  lua_setfield(L, -2, "PROCESS_GET_THREADS_QUERY_FAILED");
+
+  lua_pushinteger(L, scheduler::GET_THREADS_PERMISSION_DENIED);
+  lua_setfield(L, -2, "PROCESS_GET_THREADS_PERMISSION_DENIED");
 
   lua_pushcfunction(L, GetProcessThreads);
   lua_setfield(L, -2, "getProcessThreads");
@@ -310,7 +452,7 @@ void Register(lua_State* L) {
   lua_pushcfunction(L, HideConsole);
   lua_setfield(L, -2, "hideConsole");
 
-  // Displays
+  // Display
   lua_pushcfunction(L, GetMonitors);
   lua_setfield(L, -2, "getMonitors");
 
@@ -330,6 +472,62 @@ void Register(lua_State* L) {
 
   lua_pushcfunction(L, SleepMs);
   lua_setfield(L, -2, "sleepMs");
+
+  // Tray
+  lua_newtable(L);
+
+  lua_pushcfunction(L, TrayInit);
+  lua_setfield(L, -2, "init");
+
+  lua_pushcfunction(L, TrayDestroy);
+  lua_setfield(L, -2, "destroy");
+
+  lua_pushcfunction(L, TrayAddMenuItem);
+  lua_setfield(L, -2, "addMenuItem");
+
+  lua_pushcfunction(L, TrayAddCheckableMenuItem);
+  lua_setfield(L, -2, "addCheckableMenuItem");
+
+  lua_pushcfunction(L, TraySetMenuChecked);
+  lua_setfield(L, -2, "setMenuChecked");
+
+  lua_pushcfunction(L, TrayIsMenuChecked);
+  lua_setfield(L, -2, "isMenuChecked");
+
+  lua_pushcfunction(L, TrayCreateSubMenu);
+  lua_setfield(L, -2, "createSubMenu");
+
+  lua_pushcfunction(L, TrayAddMenuItemToSubMenu);
+  lua_setfield(L, -2, "addMenuItemToSubMenu");
+
+  lua_pushcfunction(L, TrayAddSubMenu);
+  lua_setfield(L, -2, "addSubMenu");
+
+  lua_setfield(L, -2, "tray");
+
+  // Messagebox
+
+  lua_pushcfunction(L, ShowMessageBox);
+  lua_setfield(L, -2, "showMessageBox");
+
+  lua_pushcfunction(L, ShowYesNoBox);
+  lua_setfield(L, -2, "showYesNoBox");
+
+  // Admin
+
+  lua_pushcfunction(L, IsRunningAsAdmin);
+  lua_setfield(L, -2, "isRunningAsAdmin");
+
+  // Main
+
+  lua_pushcfunction(L, SetShutdown);
+  lua_setfield(L, -2, "shutdown");
+
+  lua_pushcfunction(L, SetRestart);
+  lua_setfield(L, -2, "restart");
+
+  lua_pushcfunction(L, SetRestartAsAdmin);
+  lua_setfield(L, -2, "restartAsAdmin");
 
   lua_setglobal(L, "gcb");
 }

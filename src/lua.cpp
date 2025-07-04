@@ -16,6 +16,7 @@ static int gameStartFuncRef = LUA_REFNIL;
 static int gameStopFuncRef = LUA_REFNIL;
 static int gameForegroundRef = LUA_REFNIL;
 static int gameBackgroundRef = LUA_REFNIL;
+static int trayEventFuncRef = LUA_REFNIL;
 
 void Init() {
   L = luaL_newstate();
@@ -166,6 +167,37 @@ void TriggerGameBackground(int pid, const std::string& name, const std::string& 
   }
 }
 
+// Tray events
+
+void InitTrayCallback() {
+  trayEventFuncRef = LUA_REFNIL;
+
+  lua_getglobal(L, "gcb");
+  if (lua_istable(L, -1)) {
+    lua_getfield(L, -1, "onTrayEvent");
+    if (lua_isfunction(L, -1)) {
+      trayEventFuncRef = luaL_ref(L, LUA_REGISTRYINDEX);
+    } else {
+      lua_pop(L, 1);
+    }
+  }
+  lua_pop(L, 1);
+}
+
+void TriggerTrayEvent(int id) {
+  if (trayEventFuncRef == LUA_REFNIL) {
+    return;
+  }
+
+  lua_rawgeti(L, LUA_REGISTRYINDEX, trayEventFuncRef);
+  lua_pushinteger(L, id);
+
+  if (lua_pcall(L, 1, 0, 0) != LUA_OK) {
+    printf("Lua error: %s\n", lua_tostring(L, -1));
+    lua_pop(L, 1);
+  }
+}
+
 void Shutdown() {
   if (L) {
     tickFuncRef = LUA_REFNIL;
@@ -173,6 +205,7 @@ void Shutdown() {
     gameStopFuncRef = LUA_REFNIL;
     gameForegroundRef = LUA_REFNIL;
     gameBackgroundRef = LUA_REFNIL;
+    trayEventFuncRef = LUA_REFNIL;
 
     lua_close(L);
     L = nullptr;

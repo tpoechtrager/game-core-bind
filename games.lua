@@ -1,5 +1,5 @@
 Games = {
-  ["FragPunk"] = { Binary = "FragPunk.exe", ["Core-Binding"] = { Mode = "X3D" } },
+  ["FragPunk"] = { Binary = "FragPunk.exe", ["Core-Binding"] = { Mode = "X3D", SMT = false } },
   ["Cyberpunk 2077"] = { Binary = "Cyberpunk2077.exe", ["Core-Binding"] = { Mode = "X3D", SMT = false } },
   ["NFS 14"] = { Binary = "NFS14.exe", ["Core-Binding"] = { Mode = "X3D" } },
   ["WRC"] = { Binary = "WRC.exe", ["Core-Binding"] = { Mode = "X3D" } },
@@ -7,7 +7,7 @@ Games = {
   ["Need For Speed Unbound"] = { Binary = "NeedForSpeedUnbound.exe", ["Core-Binding"] = { Mode = "X3D" } },
   ["Need For Speed Heat"] = { Binary = "NeedForSpeedHeat.exe", ["Core-Binding"] = { Mode = "X3D" } },
   ["Quake Champions"] = { Binary = "QuakeChampions.exe", ["Core-Binding"] = { Mode = "X3D" } },
-  ["sauerbraten wc"] = { Binary = "sauerbraten_wc.exe", ["Core-Binding"] = { Mode = "NON-X3D", SMT = false }, ["Init-Wait"] = { WaitMs = 250 } },
+  ["sauerbraten wc"] = { Binary = "sauerbraten_wc.exe", ["Core-Binding"] = { Mode = "X3D", SMT = false }, ["Init-Wait"] = { WaitMs = 250 } },
   ["sauerbraten"] = { Binary = "sauerbraten.exe", ["Core-Binding"] = { Mode = "X3D" }, ["Init-Wait"] = { WaitMs = 250 } },
   ["AC Valhalla"] = { Binary = "ACValhalla.exe", ["Core-Binding"] = { Mode = "X3D" } },
   ["Age Of Empires III DE"] = { Binary = "AgeOfEmpiresIIIDE.exe", ["Core-Binding"] = { Mode = "X3D" } },

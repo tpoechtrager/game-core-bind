@@ -3,7 +3,7 @@
 namespace admin {
 
 bool IsRunningAsAdmin();
-void RelaunchAsAdmin();
+[[noreturn]] void RelaunchAsAdmin();
 void EnsureRunningAsAdmin();
 
 } // namespace admin

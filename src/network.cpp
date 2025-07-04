@@ -30,7 +30,7 @@ void Deinit() {
 }
 
 bool SendUdpMessage(const std::string& host, int port, const std::string& message) {
-  int sock = socket(AF_INET, SOCK_DGRAM, 0);
+  auto sock = socket(AF_INET, SOCK_DGRAM, 0);
   if (sock < 0) {
     return false;
   }

@@ -1,74 +1,99 @@
 #include "scheduler.h"
 #include <vector>
-#include <cstdio>
 
 #ifdef _WIN32
 #include <windows.h>
 #else
 #include <sched.h>
 #include <unistd.h>
+#include <errno.h>
 #endif
 
 namespace scheduler {
 
-bool BindProcessToThreads(int pid, const std::vector<int>& threads) {
+BindResult BindProcessToThreads(int pid, const std::vector<int>& threads) {
   if (threads.empty()) {
-    return false;
+    return BIND_INVALID_THREAD_INDEX;
   }
 
 #ifdef _WIN32
   DWORD_PTR mask = 0;
   for (int t : threads) {
     if (t < 0 || t >= (int)(sizeof(DWORD_PTR) * 8)) {
-      printf("Invalid thread index: %d\n", t);
-      return false;
+      return BIND_INVALID_THREAD_INDEX;
     }
     mask |= (1ULL << t);
   }
 
   HANDLE hProcess = OpenProcess(PROCESS_SET_INFORMATION, FALSE, pid);
   if (!hProcess) {
-    printf("Failed to open process: %d\n", pid);
-    return false;
+    return BIND_OPEN_PROCESS_FAILED;
   }
 
   BOOL result = SetProcessAffinityMask(hProcess, mask);
   CloseHandle(hProcess);
-  return result != 0;
+
+  if (!result) {
+    DWORD err = GetLastError();
+    if (err == ERROR_ACCESS_DENIED) {
+      return BIND_PERMISSION_DENIED;
+    }
+    return BIND_SETAFFINITY_FAILED;
+  }
+
+  return BIND_SUCCESS;
 
 #else
   cpu_set_t cpuSet;
   CPU_ZERO(&cpuSet);
-  
+
   for (int t : threads) {
     if (t < 0 || t >= CPU_SETSIZE) {
-      printf("Invalid thread index: %d\n", t);
-      return false;
+      return BIND_INVALID_THREAD_INDEX;
     }
     CPU_SET(t, &cpuSet);
   }
 
-  int result = sched_setaffinity(pid, sizeof(cpu_set_t), &cpuSet);
-  return result == 0;
+  if (sched_setaffinity(pid, sizeof(cpu_set_t), &cpuSet) != 0) {
+    if (errno == EPERM) {
+      return BIND_PERMISSION_DENIED;
+    }
+    return BIND_SETAFFINITY_FAILED;
+  }
+
+  return BIND_SUCCESS;
 #endif
 }
 
-std::vector<int> GetProcessThreads(int pid) {
-  std::vector<int> threads;
+GetThreadsResult GetProcessThreads(int pid) {
+  GetThreadsResult result;
+  result.code = GET_THREADS_SUCCESS;
 
 #ifdef _WIN32
   HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pid);
   if (!hProcess) {
-    printf("Failed to open process: %d\n", pid);
-    return threads;
+    DWORD err = GetLastError();
+    if (err == ERROR_ACCESS_DENIED) {
+      result.code = GET_THREADS_PERMISSION_DENIED;
+    } else {
+      result.code = GET_THREADS_OPEN_PROCESS_FAILED;
+    }
+    return result;
   }
 
   DWORD_PTR mask = 0, systemMask = 0;
   if (GetProcessAffinityMask(hProcess, &mask, &systemMask)) {
     for (int i = 0; i < (int)(sizeof(DWORD_PTR) * 8); ++i) {
       if (mask & (1ULL << i)) {
-        threads.push_back(i);
+        result.threads.push_back(i);
       }
+    }
+  } else {
+    DWORD err = GetLastError();
+    if (err == ERROR_ACCESS_DENIED) {
+      result.code = GET_THREADS_PERMISSION_DENIED;
+    } else {
+      result.code = GET_THREADS_QUERY_FAILED;
     }
   }
 
@@ -81,13 +106,19 @@ std::vector<int> GetProcessThreads(int pid) {
   if (sched_getaffinity(pid, sizeof(cpu_set_t), &cpuSet) == 0) {
     for (int i = 0; i < CPU_SETSIZE; ++i) {
       if (CPU_ISSET(i, &cpuSet)) {
-        threads.push_back(i);
+        result.threads.push_back(i);
       }
+    }
+  } else {
+    if (errno == EPERM) {
+      result.code = GET_THREADS_PERMISSION_DENIED;
+    } else {
+      result.code = GET_THREADS_QUERY_FAILED;
     }
   }
 #endif
 
-  return threads;
+  return result;
 }
 
 } // namespace scheduler

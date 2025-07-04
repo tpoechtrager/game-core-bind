@@ -1,6 +1,12 @@
+-- Load version file
+require("version")
+
 -- Cache CPU info once at startup
 gcb.CpuInfo = gcb.getCPUInfo()
 
+-- Print info on startup
+
+print(string.format("Game Core Bind - Version %d (%s)", gcb.version.Build, gcb.version.GitRev))
 print(string.format("CPU: %s", gcb.CpuInfo.name))
 print(string.format("CPU: Threads: %d, CCDs: %d", gcb.CpuInfo.threads, gcb.CpuInfo.numCcds))
 
@@ -23,13 +29,24 @@ function gcb.dirExists(path)
   return true
 end
 
--- Ensures thread affinity only updated when different
-function gcb.setProcessThreadsIfDifferent(pid, targetThreads)
-  local currentThreads = gcb.getProcessThreads(pid)
+-- Process Thread binding
+gcb.SET_PROCESS_THREADS_SUCCESS = 0
+gcb.SET_PROCESS_THREADS_ERROR = 1
+gcb.SET_PROCESS_THREADS_PERMISSION_DENIED = 2
 
-  if #currentThreads == 0 then
-    return -- PID likely no longer exists, skip
+function gcb.setProcessThreadsIfDifferent(pid, targetThreads)
+  local result = gcb.getProcessThreads(pid)
+
+  if result.code ~= gcb.PROCESS_GET_THREADS_SUCCESS then
+    if result.code == gcb.PROCESS_GET_THREADS_PERMISSION_DENIED then
+      print(string.format("setProcessThreadsIfDifferent: Permission denied for PID %d", pid))
+      return gcb.SET_PROCESS_THREADS_PERMISSION_DENIED
+    end
+    print(string.format("setProcessThreadsIfDifferent: Failed to query threads for PID %d (Code: %d)", pid, result.code))
+    return gcb.SET_PROCESS_THREADS_ERROR
   end
+
+  local currentThreads = result.threads
 
   local function listsDiffer(a, b)
     if #a ~= #b then return true end
@@ -40,19 +57,30 @@ function gcb.setProcessThreadsIfDifferent(pid, targetThreads)
   end
 
   if listsDiffer(targetThreads, currentThreads) then
-    print("Thread affinity differs, updating...")
-    print("Current threads: " .. table.concat(currentThreads, ", "))
-    print("Target threads: " .. table.concat(targetThreads, ", "))
-    local success = gcb.bindProcessToThreads(pid, targetThreads)
-    if success then
-      print("Affinity successfully set")
-    else
-      print("Failed to set affinity")
+    print("setProcessThreadsIfDifferent: Thread affinity differs, updating...")
+    print("setProcessThreadsIfDifferent: Current threads: " .. table.concat(currentThreads, ", "))
+    print("setProcessThreadsIfDifferent: Target threads: " .. table.concat(targetThreads, ", "))
+
+    local code = gcb.bindProcessToThreads(pid, targetThreads)
+    if code == gcb.PROCESS_BIND_PERMISSION_DENIED then
+      print(string.format("setProcessThreadsIfDifferent: Permission denied for PID %d", pid))
+      return gcb.SET_PROCESS_THREADS_PERMISSION_DENIED
+    elseif code ~= gcb.PROCESS_BIND_SUCCESS then
+      print(string.format("setProcessThreadsIfDifferent: Failed to set affinity for PID %d, code: %d", pid, code))
+      return gcb.SET_PROCESS_THREADS_ERROR
     end
+
+    print("setProcessThreadsIfDifferent: Affinity successfully set")
   end
+
+  return gcb.SET_PROCESS_THREADS_SUCCESS
 end
 
 -- Applies thread affinity based on game settings
+gcb.SET_GAME_THREADS_SUCCESS = 0
+gcb.SET_GAME_THREADS_ERROR = 1
+gcb.SET_GAME_THREADS_PERMISSION_DENIED = 2
+
 function gcb.setGameThreads(pid, settings)
   local mode = settings.Mode or "STANDARD"
   local smt = settings.SMT
@@ -71,44 +99,63 @@ function gcb.setGameThreads(pid, settings)
     for _, ccd in ipairs(gcb.CpuInfo.ccds) do
       addThreadRange(ccd.firstThread, ccd.lastThread, ccd.cores, ccd.threads, true)
     end
-    gcb.setProcessThreadsIfDifferent(pid, targetThreads)
-    return
-  end
+  else
+    for _, ccd in ipairs(gcb.CpuInfo.ccds) do
+      if (mode == "X3D" and ccd.isX3D) or (mode == "NON-X3D" and not ccd.isX3D) then
+        addThreadRange(ccd.firstThread, ccd.lastThread, ccd.cores, ccd.threads, smt ~= false)
+        break
+      end
+    end
 
-  for i, ccd in ipairs(gcb.CpuInfo.ccds) do
-    if (mode == "X3D" and ccd.isX3D) or (mode == "NON-X3D" and not ccd.isX3D) then
-      addThreadRange(ccd.firstThread, ccd.lastThread, ccd.cores, ccd.threads, smt ~= false)
-      break
+    if mode == "X3D" and #targetThreads == 0 and #gcb.CpuInfo.ccds > 0 then
+      local fallback = gcb.CpuInfo.ccds[1]
+      addThreadRange(fallback.firstThread, fallback.lastThread, fallback.cores, fallback.threads, smt ~= false)
     end
   end
 
-  if mode == "X3D" and #targetThreads == 0 and #gcb.CpuInfo.ccds > 0 then
-    local fallback = gcb.CpuInfo.ccds[1]
-    addThreadRange(fallback.firstThread, fallback.lastThread, fallback.cores, fallback.threads, smt ~= false)
+  if #targetThreads == 0 then
+    print("setGameThreads: No valid threads found, skipping")
+    return gcb.SET_GAME_THREADS_ERROR
   end
 
-  if #targetThreads > 0 then
-    gcb.setProcessThreadsIfDifferent(pid, targetThreads)
+  local code = gcb.setProcessThreadsIfDifferent(pid, targetThreads)
+  if code == gcb.SET_PROCESS_THREADS_PERMISSION_DENIED then
+    return gcb.SET_GAME_THREADS_PERMISSION_DENIED
+  elseif code == gcb.SET_PROCESS_THREADS_SUCCESS then
+    return gcb.SET_GAME_THREADS_SUCCESS
   else
-    print("No valid threads found for game settings, skipping affinity")
+    return gcb.SET_GAME_THREADS_ERROR
   end
 end
 
+
 -- Applies game affinity based on settings
+gcb.SET_GAME_CPU_AFFINITY_SUCCESS = 0
+gcb.SET_GAME_CPU_AFFINITY_ERROR = 1
+gcb.SET_GAME_CPU_AFFINITY_PERMISSION_DENIED = 2
+
 function gcb.setGameCpuAffinity(gamePid, gameName)
   if not gamePid or not gameName then
-    print("No valid game data, skipping CPU affinity")
-    return
+    print("setGameCpuAffinity: Invalid parameters")
+    return gcb.SET_GAME_CPU_AFFINITY_ERROR
   end
 
   local gameData = getGame(gameName)
   if not gameData then
-    print("No game settings found for: " .. gameName)
-    return
+    print("setGameCpuAffinity: No settings found for: " .. gameName)
+    return gcb.SET_GAME_CPU_AFFINITY_ERROR
   end
 
   local binding = gameData["Core-Binding"] or {}
-  gcb.setGameThreads(gamePid, { Mode = binding.Mode or "STANDARD", SMT = binding.SMT })
+  local code = gcb.setGameThreads(gamePid, { Mode = binding.Mode or "STANDARD", SMT = binding.SMT })
+
+  if code == gcb.SET_GAME_THREADS_PERMISSION_DENIED then
+    return gcb.SET_GAME_CPU_AFFINITY_PERMISSION_DENIED
+  elseif code == gcb.SET_GAME_THREADS_SUCCESS then
+    return gcb.SET_GAME_CPU_AFFINITY_SUCCESS
+  else
+    return gcb.SET_GAME_CPU_AFFINITY_ERROR
+  end
 end
 
 -- Saves monitor states for later restoration
@@ -156,4 +203,18 @@ function gcb.reloadCustomLuaIfChanged()
     print(customFile .. " changed, reloading...")
     gcb.loadCustomLua()
   end
+end
+
+-- Writes current Config table to config.lua
+gcb.saveConfig = function()
+  local file = io.open("config.lua", "w")
+  if not file then return false end
+
+  file:write("Config = {\n")
+  for k, v in pairs(Config) do
+    file:write(string.format("  %s = %s,\n", k, tostring(v)))
+  end
+  file:write("}\n")
+  file:close()
+  return true
 end

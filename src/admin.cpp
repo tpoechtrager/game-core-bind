@@ -1,5 +1,6 @@
 #include "admin.h"
 #include <cstdio>
+#include <cstdlib>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -30,27 +31,38 @@ bool IsRunningAsAdmin() {
 
 void RelaunchAsAdmin() {
 #ifdef _WIN32
-  char exePath[MAX_PATH];
-  if (GetModuleFileNameA(nullptr, exePath, MAX_PATH)) {
-    SHELLEXECUTEINFOA sei = { };
-    sei.cbSize = sizeof(sei);
-    sei.fMask = 0;
-    sei.lpVerb = "runas";
-    sei.lpFile = exePath;
-    sei.nShow = SW_SHOWNORMAL;
-    if (ShellExecuteExA(&sei)) {
-      std::exit(0);
-    }
+  char exePath[MAX_PATH] = { 0 };
+  if (!GetModuleFileNameA(nullptr, exePath, MAX_PATH)) {
+    exit(EXIT_FAILURE);
+  }
+
+  char workingDir[MAX_PATH] = { 0 };
+  if (!GetCurrentDirectoryA(MAX_PATH, workingDir)) {
+    exit(EXIT_FAILURE);
+  }
+
+  SHELLEXECUTEINFOA sei = { };
+  sei.cbSize = sizeof(sei);
+  sei.fMask = SEE_MASK_DEFAULT;
+  sei.lpVerb = "runas";
+  sei.lpFile = exePath;
+  sei.lpDirectory = workingDir;
+  sei.nShow = SW_SHOWNORMAL;
+
+  if (ShellExecuteExA(&sei)) {
+    exit(EXIT_SUCCESS);
   }
 #endif
+
+  exit(EXIT_FAILURE);
 }
+
 
 void EnsureRunningAsAdmin() {
 #ifdef _WIN32
   if (!IsRunningAsAdmin()) {
     printf("Not running as admin, relaunching with admin privs...\n");
     RelaunchAsAdmin();
-    std::exit(0);
   }
 #endif
 }

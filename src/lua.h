@@ -22,6 +22,9 @@ void InitTick();
 // Initialize foreground/background callbacks if present
 void InitForegroundCallbacks();
 
+// Initialize tray event callback if present
+void InitTrayCallback();
+
 // Trigger registered onTick function
 void TriggerTick();
 
@@ -36,5 +39,8 @@ void TriggerGameForeground(int pid, const std::string& name, const std::string& 
 
 // Trigger onGameBackground event
 void TriggerGameBackground(int pid, const std::string& name, const std::string& binary);
+
+// Trigger onTrayEvent
+void TriggerTrayEvent(int id);
 
 } // namespace lua
