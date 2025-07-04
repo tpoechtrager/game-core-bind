@@ -1,8 +1,10 @@
 #include "tools.h"
 #include <filesystem>
+#include <string>
 #include <iostream>
 #include <chrono>
 #include <thread>
+#include <cstdlib>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -12,8 +14,25 @@
 #include <cerrno>
 #include <cstring>
 #endif
-
 namespace tools {
+
+void RunDetached(const std::string& exe, const std::string& args) {
+#ifdef _WIN32
+  std::string cmd = "\"" + exe + "\" " + args;
+
+  STARTUPINFOA si = { sizeof(si) };
+  PROCESS_INFORMATION pi = { 0 };
+
+  if (CreateProcessA(nullptr, (LPSTR)cmd.c_str(), nullptr, nullptr, FALSE,
+                     CREATE_NO_WINDOW | DETACHED_PROCESS, nullptr, nullptr, &si, &pi)) {
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+  }
+#else
+  std::string fullCmd = exe + " " + args + " &";
+  system(fullCmd.c_str());
+#endif
+}
 
 std::time_t GetFileTimestamp(const std::string& path) {
   std::error_code ec;

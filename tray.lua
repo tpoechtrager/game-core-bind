@@ -1,11 +1,11 @@
--- Tray item IDs
 local ID_EXIT = 100
 local ID_CONFIG_DISABLE_DESKTOP_EFFECTS = 101
 local ID_CONFIG_SET_CPU_AFFINITY = 102
 local ID_CONFIG_HIDE_CONSOLE = 103
 local ID_CONFIG_DISABLE_NON_PRIMARY_DISPLAYS = 104
 local ID_CONFIG_ENSURE_RUNNING_AS_ADMIN = 105
-local ID_VERSION_INFO = 9999 -- Dummy-ID für Version, keine Aktion
+local ID_OPEN_GAMES_FILE = 200
+local ID_VERSION_INFO = 300
 
 -- Cleanup existing tray if needed
 gcb.tray.destroy()
@@ -17,6 +17,9 @@ gcb.tray.init(tooltip)
 -- Version info as disabled menu entry
 local versionText = string.format("Version %d (%s)", gcb.version.Build, gcb.version.GitRev)
 gcb.tray.addMenuItem(versionText, ID_VERSION_INFO)
+
+-- Open games.lua
+gcb.tray.addMenuItem("Open games.lua", ID_OPEN_GAMES_FILE)
 
 -- Create config submenu
 local configMenu = gcb.tray.createSubMenu()
@@ -67,6 +70,8 @@ function gcb.onTrayEvent(id)
     if state and not gcb.isRunningAsAdmin() then
       gcb.restartAsAdmin()
     end
+  elseif id == ID_OPEN_GAMES_FILE then
+    gcb.runDetached("notepad.exe", "games.lua")
   elseif id == ID_VERSION_INFO then
     gcb.showMessageBox(
       "GCB Version",

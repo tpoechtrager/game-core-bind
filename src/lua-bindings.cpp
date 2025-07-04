@@ -272,6 +272,13 @@ static int SendUdp(lua_State* L) {
 
 // Tools
 
+static int RunDetached(lua_State* L) {
+  const char* exe = luaL_checkstring(L, 1);
+  const char* args = luaL_optstring(L, 2, "");
+  tools::RunDetached(exe, args);
+  return 0;
+}
+
 static int GetFileTimestamp(lua_State* L) {
   const char* path = luaL_checkstring(L, 1);
   std::time_t ts = tools::GetFileTimestamp(path);
@@ -467,6 +474,9 @@ void Register(lua_State* L) {
   lua_setfield(L, -2, "sendUdp");
 
   // Tools
+  lua_pushcfunction(L, RunDetached);
+  lua_setfield(L, -2, "runDetached");
+
   lua_pushcfunction(L, GetFileTimestamp);
   lua_setfield(L, -2, "getFileTimestamp");
 
