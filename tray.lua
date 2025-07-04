@@ -1,9 +1,8 @@
 local ID_EXIT = 100
 local ID_CONFIG_DISABLE_DESKTOP_EFFECTS = 101
 local ID_CONFIG_SET_CPU_AFFINITY = 102
-local ID_CONFIG_HIDE_CONSOLE = 103
-local ID_CONFIG_DISABLE_NON_PRIMARY_DISPLAYS = 104
-local ID_CONFIG_ENSURE_RUNNING_AS_ADMIN = 105
+local ID_CONFIG_DISABLE_NON_PRIMARY_DISPLAYS = 103
+local ID_CONFIG_ENSURE_RUNNING_AS_ADMIN = 104
 local ID_OPEN_GAMES_FILE = 200
 local ID_VERSION_INFO = 300
 
@@ -26,8 +25,7 @@ local configMenu = gcb.tray.createSubMenu()
 
 gcb.tray.addMenuItemToSubMenu(configMenu, "Disable Desktop Effects (When Ingame)", ID_CONFIG_DISABLE_DESKTOP_EFFECTS)
 gcb.tray.addMenuItemToSubMenu(configMenu, "Set CPU Affinity", ID_CONFIG_SET_CPU_AFFINITY)
-gcb.tray.addMenuItemToSubMenu(configMenu, "Hide Console", ID_CONFIG_HIDE_CONSOLE)
-gcb.tray.addMenuItemToSubMenu(configMenu, "Disable Non-Primary Displays  (When Ingame)", ID_CONFIG_DISABLE_NON_PRIMARY_DISPLAYS)
+gcb.tray.addMenuItemToSubMenu(configMenu, "Disable Non-Primary Displays (When Ingame)", ID_CONFIG_DISABLE_NON_PRIMARY_DISPLAYS)
 gcb.tray.addMenuItemToSubMenu(configMenu, "Ensure Running As Admin", ID_CONFIG_ENSURE_RUNNING_AS_ADMIN)
 
 -- Attach submenu
@@ -39,7 +37,6 @@ gcb.tray.addMenuItem("Exit", ID_EXIT)
 -- Set initial check states
 gcb.tray.setMenuChecked(ID_CONFIG_DISABLE_DESKTOP_EFFECTS, Config.DisableDesktopEffects)
 gcb.tray.setMenuChecked(ID_CONFIG_SET_CPU_AFFINITY, Config.SetCpuAffinity)
-gcb.tray.setMenuChecked(ID_CONFIG_HIDE_CONSOLE, Config.HideConsole)
 gcb.tray.setMenuChecked(ID_CONFIG_DISABLE_NON_PRIMARY_DISPLAYS, Config.DisableNonPrimaryDisplays)
 gcb.tray.setMenuChecked(ID_CONFIG_ENSURE_RUNNING_AS_ADMIN, Config.EnsureRunningAsAdmin)
 
@@ -51,11 +48,6 @@ function gcb.onTrayEvent(id)
     local state = not gcb.tray.isMenuChecked(id)
     gcb.tray.setMenuChecked(id, state)
     Config.DisableDesktopEffects = state
-    gcb.saveConfig()
-  elseif id == ID_CONFIG_HIDE_CONSOLE then
-    local state = not gcb.tray.isMenuChecked(id)
-    gcb.tray.setMenuChecked(id, state)
-    Config.HideConsole = state
     gcb.saveConfig()
   elseif id == ID_CONFIG_DISABLE_NON_PRIMARY_DISPLAYS then
     local state = not gcb.tray.isMenuChecked(id)

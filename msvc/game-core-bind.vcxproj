@@ -20,7 +20,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\admin.cpp" />
-    <ClCompile Include="..\src\console.cpp" />
     <ClCompile Include="..\src\cpu.cpp" />
     <ClCompile Include="..\src\desktop.cpp" />
     <ClCompile Include="..\src\display.cpp" />
@@ -37,7 +36,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\admin.h" />
-    <ClInclude Include="..\src\console.h" />
     <ClInclude Include="..\src\cpu.h" />
     <ClInclude Include="..\src\desktop.h" />
     <ClInclude Include="..\src\display.h" />

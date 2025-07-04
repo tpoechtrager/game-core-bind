@@ -1,7 +1,7 @@
 Config = {
-  SetCpuAffinity = true,
-  EnsureRunningAsAdmin = false,
-  DisableNonPrimaryDisplays = false,
-  HideConsole = false,
+  HideConsole = true,
   DisableDesktopEffects = true,
+  EnsureRunningAsAdmin = false,
+  SetCpuAffinity = true,
+  DisableNonPrimaryDisplays = false,
 }

@@ -21,9 +21,6 @@
     <ClCompile Include="..\src\admin.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\console.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\cpu.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
@@ -66,9 +63,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\admin.h">
-      <Filter>Quelldateien</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\console.h">
       <Filter>Quelldateien</Filter>
     </ClInclude>
     <ClInclude Include="..\src\cpu.h">

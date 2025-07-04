@@ -3,7 +3,6 @@
 #include "games.h"
 #include "desktop.h"
 #include "scheduler.h"
-#include "console.h"
 #include "display.h"
 #include "network.h"
 #include "tools.h"
@@ -142,13 +141,6 @@ static int GetProcessThreads(lua_State* L) {
 
   lua_settable(L, -3);
   return 1;
-}
-
-// Console
-
-static int HideConsole(lua_State*) {
-  console::HideWindow();
-  return 0;
 }
 
 // Displays
@@ -454,10 +446,6 @@ void Register(lua_State* L) {
 
   lua_pushcfunction(L, GetProcessThreads);
   lua_setfield(L, -2, "getProcessThreads");
-
-  // Console
-  lua_pushcfunction(L, HideConsole);
-  lua_setfield(L, -2, "hideConsole");
 
   // Display
   lua_pushcfunction(L, GetMonitors);

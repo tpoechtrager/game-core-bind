@@ -114,8 +114,4 @@ gcb.onGameBackground = function(pid, name, binary)
   end
 end
 
-if Config.HideConsole and not gcb.dirExists("src") then
-  gcb.hideConsole()
-end
-
 print("Waiting for games to be launched ...")

@@ -42,13 +42,19 @@ ifeq ($(STRIP),)
   $(error No strip tool found in PATH)
 endif
 
+EXT = .exe
+TARGET_CONSOLE = gcb_console$(EXT)
+TARGET_WINDOW = gcb$(EXT)
+LDFLAGS_CONSOLE = $(STATIC_FLAGS) -Wl,-subsystem,console
+LDFLAGS_WINDOW = $(STATIC_FLAGS) -Wl,-subsystem,windows
+
 else
 
 ARCH ?= $(shell uname -m)
 CXX := clang++
 CC := clang
 STRIP := strip
-LUA_INCLUDE := 
+LUA_INCLUDE :=
 LUA_LIB := -llua
 STATIC_FLAGS :=
 
@@ -59,10 +65,13 @@ ifeq ($(ARCH), x86_64)
   STATIC_FLAGS += -m64
 endif
 
+EXT =
+TARGET = gcb$(EXT)
+LDFLAGS := $(STATIC_FLAGS)
+
 endif
 
 CXXFLAGS = -Wall -Wextra -O3 -fno-exceptions $(LUA_INCLUDE)
-LDFLAGS = $(STATIC_FLAGS)
 
 SRCS = src/cpu.cpp \
        src/lua.cpp \
@@ -72,7 +81,6 @@ SRCS = src/cpu.cpp \
        src/desktop.cpp \
        src/tools.cpp \
        src/scheduler.cpp \
-       src/console.cpp \
        src/display.cpp \
        src/network.cpp \
        src/admin.cpp \
@@ -82,26 +90,30 @@ SRCS = src/cpu.cpp \
 
 OBJS = $(SRCS:.cpp=.o)
 
-EXT :=
-ifeq ($(PLATFORM), mingw)
-  EXT = .exe
-endif
-
-TARGET = gcb$(EXT)
-
 .PHONY: all clean version.lua
 
 all:
 	rm -f $(OBJS)
+	$(MAKE) version.lua
+ifeq ($(PLATFORM), mingw)
+	$(MAKE) $(TARGET_CONSOLE)
+	$(MAKE) $(TARGET_WINDOW)
+else
 	$(MAKE) $(TARGET)
+endif
 
 $(OBJS): $(LUA_LIB)
 
-$(TARGET): version.lua $(OBJS) $(LUA_LIB)
-	$(CXX) $(OBJS) $(LUA_LIB) -o $@ $(LDFLAGS)
-ifeq ($(PLATFORM), mingw)
+$(TARGET_CONSOLE): $(OBJS) $(LUA_LIB)
+	$(CXX) $(OBJS) $(LUA_LIB) -o $@ $(LDFLAGS_CONSOLE)
 	$(STRIP) $@
-endif
+
+$(TARGET_WINDOW): $(OBJS) $(LUA_LIB)
+	$(CXX) $(OBJS) $(LUA_LIB) -o $@ $(LDFLAGS_WINDOW)
+	$(STRIP) $@
+
+$(TARGET): $(OBJS) $(LUA_LIB)
+	$(CXX) $(OBJS) $(LUA_LIB) -o $@ $(LDFLAGS)
 
 %.o: %.cpp cpu.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
@@ -130,4 +142,9 @@ version.lua:
 	@echo "}" >> version.lua
 
 clean:
-	rm -f $(OBJS) $(TARGET) version.lua
+	rm -f $(OBJS) version.lua
+ifeq ($(PLATFORM), mingw)
+	rm -f $(TARGET_CONSOLE) $(TARGET_WINDOW)
+else
+	rm -f $(TARGET)
+endif

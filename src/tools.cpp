@@ -20,8 +20,10 @@ void RunDetached(const std::string& exe, const std::string& args) {
 #ifdef _WIN32
   std::string cmd = "\"" + exe + "\" " + args;
 
-  STARTUPINFOA si = { sizeof(si) };
-  PROCESS_INFORMATION pi = { 0 };
+  STARTUPINFOA si = {};
+  si.cb = sizeof(si);
+
+  PROCESS_INFORMATION pi = {};
 
   if (CreateProcessA(nullptr, (LPSTR)cmd.c_str(), nullptr, nullptr, FALSE,
                      CREATE_NO_WINDOW | DETACHED_PROCESS, nullptr, nullptr, &si, &pi)) {

@@ -2,7 +2,7 @@ custom = {}
 
 local function SetDesktopMouseSensitivity()
   print("Setting desktop mouse sensitivity...")
-  os.execute([[C:\Users\thomas\Desktop\mon\mouse.exe --dpi 1550 --poll-rate 1000 > NUL 2>&1]])
+  gcb.runDetached("C:\\Users\\thomas\\Desktop\\mon\\mouse.exe", "--dpi 1550 --poll-rate 1000")
 end
 
 local function SetIngameMouseSensitivity(pid, name, binary)
@@ -16,7 +16,8 @@ local function SetIngameMouseSensitivity(pid, name, binary)
   end
 
   print("Setting ingame mouse sensitivity...")
-  os.execute(string.format([[C:\Users\thomas\Desktop\mon\mouse.exe --dpi %d --poll-rate %d > NUL 2>&1]], dpi, pollRate))
+  gcb.runDetached("C:\\Users\\thomas\\Desktop\\mon\\mouse.exe",
+                  string.format("--dpi %d --poll-rate %d", dpi, pollRate))
 end
 
 function custom.gameStart(pid, name, binary)
