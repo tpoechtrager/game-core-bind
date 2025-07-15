@@ -291,6 +291,8 @@ Games = {
   ["Saints Row IV Re-Elected"] = { Binary = "SaintsRowIV.exe", ["Core-Binding"] = { Mode = gcb.CoreBindingMode.X3D } },
   ["Saints Row The Third Remastered"] = { Binary = "SaintsRowTheThird.exe", ["Core-Binding"] = { Mode = gcb.CoreBindingMode.X3D } },
   ["Satisfactory"] = { Binary = "Satisfactory.exe", ["Core-Binding"] = { Mode = gcb.CoreBindingMode.X3D } },
+  ["Sauerbraten"] = { Binary = "sauerbraten.exe", ["Core-Binding"] = { Mode = gcb.CoreBindingMode.X3D, SMT = false }, ["Init-Wait"] = { WaitMs = 250 } },
+  ["Sauerbraten WC"] = { Binary = "sauerbraten_wc.exe", ["Core-Binding"] = { Mode = gcb.CoreBindingMode.X3D, SMT = false }, ["Init-Wait"] = { WaitMs = 250 } },
   ["Scarlet Nexus"] = { Binary = "ScarletNexus.exe", ["Core-Binding"] = { Mode = gcb.CoreBindingMode.X3D } },
   ["Sea Of Solitude"] = { Binary = "SeaOfSolitude.exe", ["Core-Binding"] = { Mode = gcb.CoreBindingMode.X3D } },
   ["Sekiro"] = { Binary = "Sekiro.exe", ["Core-Binding"] = { Mode = gcb.CoreBindingMode.X3D } },
@@ -374,6 +376,4 @@ Games = {
   ["Yakuza Kiwami"] = { Binary = "YakuzaKiwami.exe", ["Core-Binding"] = { Mode = gcb.CoreBindingMode.X3D } },
   ["Yakuza Kiwami 2"] = { Binary = "YakuzaKiwami2.exe", ["Core-Binding"] = { Mode = gcb.CoreBindingMode.X3D } },
   ["Yakuza Like A Dragon"] = { Binary = "YakuzaLAD.exe", ["Core-Binding"] = { Mode = gcb.CoreBindingMode.X3D } },
-  ["sauerbraten"] = { Binary = "sauerbraten.exe", ["Core-Binding"] = { Mode = gcb.CoreBindingMode.X3D, SMT = true }, ["Init-Wait"] = { WaitMs = 250 } },
-  ["sauerbraten wc"] = { Binary = "sauerbraten_wc.exe", ["Core-Binding"] = { Mode = gcb.CoreBindingMode.X3D, SMT = false }, ["Init-Wait"] = { WaitMs = 0 } },
 }

@@ -32,7 +32,7 @@ gcb.onGameStart = function(pid, name, binary)
 
   print("Game started: " .. name .. " (" .. binary .. "), PID: " .. pid)
 
-  local gameData = getGame(name)
+  local gameData = gcb.getGame(name)
   if gameData and gameData["Init-Wait"] and gameData["Init-Wait"].WaitMs then
     print("Sleeping " .. gameData["Init-Wait"].WaitMs .. " ms")
     gcb.sleepMs(gameData["Init-Wait"].WaitMs)
