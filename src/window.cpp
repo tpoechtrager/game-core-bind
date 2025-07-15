@@ -46,8 +46,8 @@ static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
       GetScrollInfo(hwnd, SB_VERT, &si);
 
       switch (LOWORD(wParam)) {
-        case SB_LINEUP:     si.nPos -= 20; break;
-        case SB_LINEDOWN:   si.nPos += 20; break;
+        case SB_LINEUP:     si.nPos -= 60; break;
+        case SB_LINEDOWN:   si.nPos += 60; break;
         case SB_PAGEUP:     si.nPos -= si.nPage; break;
         case SB_PAGEDOWN:   si.nPos += si.nPage; break;
         case SB_THUMBTRACK: si.nPos  = HIWORD(wParam); break;
@@ -65,6 +65,17 @@ static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
       UpdateWindow(win->contentHwnd);
       return 0;
     }
+
+  case WM_KEYDOWN:
+    switch (wParam) {
+      case VK_PRIOR: // Page Up
+        SendMessage(hwnd, WM_VSCROLL, MAKEWPARAM(SB_PAGEUP, 0), 0);
+        return 0;
+      case VK_NEXT: // Page Down
+        SendMessage(hwnd, WM_VSCROLL, MAKEWPARAM(SB_PAGEDOWN, 0), 0);
+        return 0;
+    }
+    break;
 
     case WM_CLOSE: {
       lua::TriggerWindowCloseEvent(win);

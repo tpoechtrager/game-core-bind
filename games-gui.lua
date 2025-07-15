@@ -10,7 +10,7 @@ function showGameConfigWindow()
     table.insert(coreModes, v)
   end
 
-  local initWaitOptions = { "no delay", "100 ms", "250 ms", "1000 ms", "2000 ms", "5000 ms" }
+  local initWaitOptions = { "No Delay", "100 ms", "250 ms", "1000 ms", "2000 ms", "5000 ms" }
   local initWaitValues = { 0, 100, 250, 1000, 2000, 5000 }
 
   local win = gcb.window.create {
@@ -135,6 +135,18 @@ function showGameConfigWindow()
           return
         end
 
+        -- Check for duplicate name or binary (case-insensitive)
+        if gcb.getGame(name, true) then
+          gcb.showMessageBox("Duplicate Game", "A game with this name already exists.")
+          return
+        end
+
+        local existingName = gcb.getGameByBinary(binary, true)
+        if existingName then
+          gcb.showMessageBox("Duplicate Binary", "This binary is already used by the game: " .. existingName)
+          return
+        end
+
         local mode = coreModes[gcb.window.getComboBoxSelectedIndex(win, addComboId) + 1]
         local smt = gcb.window.getCheckBoxChecked(win, addCheckId)
         local wait = initWaitValues[gcb.window.getComboBoxSelectedIndex(win, addWaitComboId) + 1]
@@ -145,11 +157,19 @@ function showGameConfigWindow()
           ["Init-Wait"] = { WaitMs = wait }
         }
 
-        print("Added new game: " .. name)
         gcb.window.destroy(win)
         gcb.window.unregisterCallbacks(win)
         gameConfigWindow = nil
         showGameConfigWindow()
+      elseif deleteButtonMap[id] then
+        local name = deleteButtonMap[id]
+        if gcb.showYesNoBox("Delete Game", "Do you really want to delete '" .. name .. "'?") then
+          Games[name] = nil
+          gcb.window.destroy(win)
+          gcb.window.unregisterCallbacks(win)
+          gameConfigWindow = nil
+          showGameConfigWindow()
+        end
       elseif rowControls[id] then
         local row = rowControls[id]
         local oldName = row.name
@@ -170,18 +190,13 @@ function showGameConfigWindow()
           ["Core-Binding"] = { Mode = mode, SMT = smt },
           ["Init-Wait"] = { WaitMs = wait }
         }
-
-        print("Updated game: " .. newName)
-        print("Binary: " .. binary)
-        print("Mode: " .. tostring(mode))
-        print("SMT: " .. tostring(smt))
-        print("Init-Wait: " .. tostring(wait) .. " ms")
       end
     end,
     onClose = function(win)
       gcb.window.destroy(win)
       gcb.window.unregisterCallbacks(win)
       gameConfigWindow = nil
+      gcb.saveGames()
     end
   })
 

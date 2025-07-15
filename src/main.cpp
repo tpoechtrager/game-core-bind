@@ -25,7 +25,7 @@ struct LuaFileEntry {
 static const std::vector<LuaFileEntry> luaFiles = {
   { "gcb.lua", true },
   { "config.lua", false }, // config.lua is written automatically. Don't monitor it.
-  { "games-config.lua", true },
+  { "games-config.lua", false },  // games-config.lua is written automatically. Don't monitor it.
   { "games.lua", true },
   { "main.lua", true },
   { "tray.lua", true },

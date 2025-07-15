@@ -134,7 +134,7 @@ function gcb.setGameCpuAffinity(gamePid, gameName)
     return gcb.SET_GAME_CPU_AFFINITY_ERROR
   end
 
-  local gameData = getGame(gameName)
+  local gameData = gcb.getGame(gameName)
   if not gameData then
     print("setGameCpuAffinity: No settings found for: " .. gameName)
     return gcb.SET_GAME_CPU_AFFINITY_ERROR

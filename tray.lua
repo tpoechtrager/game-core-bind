@@ -24,9 +24,9 @@ gcb.tray.addMenuItem("Edit Games", ID_OPEN_GAME_GUI)
 local configMenu = gcb.tray.createSubMenu()
 
 gcb.tray.addMenuItemToSubMenu(configMenu, "Disable Desktop Effects (When Ingame)", ID_CONFIG_DISABLE_DESKTOP_EFFECTS)
-gcb.tray.addMenuItemToSubMenu(configMenu, "Set CPU Affinity", ID_CONFIG_SET_CPU_AFFINITY)
+gcb.tray.addMenuItemToSubMenu(configMenu, "Enable Per-Game Core Binding", ID_CONFIG_SET_CPU_AFFINITY)
 gcb.tray.addMenuItemToSubMenu(configMenu, "Disable Non-Primary Displays (When Ingame)", ID_CONFIG_DISABLE_NON_PRIMARY_DISPLAYS)
-gcb.tray.addMenuItemToSubMenu(configMenu, "Ensure Running As Admin", ID_CONFIG_ENSURE_RUNNING_AS_ADMIN)
+gcb.tray.addMenuItemToSubMenu(configMenu, "Run as admin", ID_CONFIG_ENSURE_RUNNING_AS_ADMIN)
 
 -- Attach submenu
 gcb.tray.addSubMenu("Config", configMenu)
@@ -48,6 +48,11 @@ function gcb.onTrayEvent(id)
     local state = not gcb.tray.isMenuChecked(id)
     gcb.tray.setMenuChecked(id, state)
     Config.DisableDesktopEffects = state
+    gcb.saveConfig()
+  elseif id == ID_CONFIG_SET_CPU_AFFINITY then
+    local state = not gcb.tray.isMenuChecked(id)
+    gcb.tray.setMenuChecked(id, state)
+    Config.SetCpuAffinity = state
     gcb.saveConfig()
   elseif id == ID_CONFIG_DISABLE_NON_PRIMARY_DISPLAYS then
     local state = not gcb.tray.isMenuChecked(id)
