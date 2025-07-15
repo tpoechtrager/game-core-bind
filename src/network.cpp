@@ -31,10 +31,16 @@ void Deinit() {
 
 bool SendUdpMessage(const std::string& host, int port, const std::string& message) {
   auto sock = socket(AF_INET, SOCK_DGRAM, 0);
+
+#ifdef _WIN32
+  if (sock == INVALID_SOCKET) {
+    return false;
+  }
+#else
   if (sock < 0) {
     return false;
   }
-
+#endif
   sockaddr_in addr = { };
   addr.sin_family = AF_INET;
   addr.sin_port = htons(static_cast<uint16_t>(port));

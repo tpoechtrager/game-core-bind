@@ -13,9 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Quelldateien\lua">
-      <UniqueIdentifier>{22a01ee6-0985-4602-ae14-97f758ef460d}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\admin.cpp">
@@ -58,6 +55,9 @@
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="..\src\messagebox.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\window.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>
@@ -104,25 +104,8 @@
     <ClInclude Include="..\src\messagebox.h">
       <Filter>Quelldateien</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\config.lua">
-      <Filter>Quelldateien\lua</Filter>
-    </None>
-    <None Include="..\custom.example.lua">
-      <Filter>Quelldateien\lua</Filter>
-    </None>
-    <None Include="..\games.lua">
-      <Filter>Quelldateien\lua</Filter>
-    </None>
-    <None Include="..\gcb.lua">
-      <Filter>Quelldateien\lua</Filter>
-    </None>
-    <None Include="..\main.lua">
-      <Filter>Quelldateien\lua</Filter>
-    </None>
-    <None Include="..\tray.lua">
-      <Filter>Quelldateien\lua</Filter>
-    </None>
+    <ClInclude Include="..\src\window.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -1,3 +1,4 @@
+#include <unordered_map>
 #include "lua-bindings.h"
 #include "cpu.h"
 #include "games.h"
@@ -7,6 +8,7 @@
 #include "network.h"
 #include "tools.h"
 #include "tray.h"
+#include "window.h"
 #include "messagebox.h"
 #include "admin.h"
 #include "main.h"
@@ -346,6 +348,193 @@ static int TrayAddSubMenu(lua_State* L) {
   return 0;
 }
 
+// Window
+
+static std::unordered_map<void*, window::WindowPtr> windowRegistry;
+
+static int WindowCreate(lua_State* L) {
+  luaL_checktype(L, 1, LUA_TTABLE);
+  window::WindowConfig config;
+
+  lua_getfield(L, 1, "title");
+  config.title = luaL_optstring(L, -1, "Window");
+  lua_pop(L, 1);
+
+  lua_getfield(L, 1, "width");
+  config.width = (int)luaL_optinteger(L, -1, 800);
+  lua_pop(L, 1);
+
+  lua_getfield(L, 1, "height");
+  config.height = (int)luaL_optinteger(L, -1, 600);
+  lua_pop(L, 1);
+
+  lua_getfield(L, 1, "resizable");
+  config.resizable = lua_isboolean(L, -1) ? lua_toboolean(L, -1) : true;
+  lua_pop(L, 1);
+
+  lua_getfield(L, 1, "center");
+  if (lua_isboolean(L, -1) && lua_toboolean(L, -1)) {
+    config.position = window::WindowPosition::Center;
+  }
+  lua_pop(L, 1);
+
+  lua_getfield(L, 1, "scrollable");
+  config.scrollableContent = lua_isboolean(L, -1) && lua_toboolean(L, -1);
+  lua_pop(L, 1);
+
+  auto ptr = window::Create(config);
+  void* key = ptr.get();
+  windowRegistry[key] = ptr;
+
+  lua_pushlightuserdata(L, key);
+  return 1;
+}
+
+static window::WindowPtr GetWindow(lua_State* L, int index) {
+  void* key = lua_touserdata(L, index);
+  auto it = windowRegistry.find(key);
+  if (it != windowRegistry.end()) {
+    return it->second;
+  }
+  return nullptr;
+}
+
+static int WindowDestroy(lua_State* L) {
+  void* key = lua_touserdata(L, 1);
+  auto it = windowRegistry.find(key);
+  if (it != windowRegistry.end()) {
+    window::Destroy(it->second);
+    windowRegistry.erase(it);
+  }
+  return 0;
+}
+
+static int WindowShow(lua_State* L) {
+  auto win = GetWindow(L, 1);
+  if (win) {
+    window::Show(win);
+  }
+  return 0;
+}
+
+static int WindowAddStatic(lua_State* L) {
+  auto win = GetWindow(L, 1);
+  int x = luaL_checkinteger(L, 2);
+  int y = luaL_checkinteger(L, 3);
+  int w = luaL_checkinteger(L, 4);
+  int h = luaL_checkinteger(L, 5);
+  const char* text = luaL_checkstring(L, 6);
+  lua_pushinteger(L, window::AddStatic(win, x, y, w, h, text));
+  return 1;
+}
+
+static int WindowAddGroupBox(lua_State* L) {
+  auto win = GetWindow(L, 1);
+  int x = luaL_checkinteger(L, 2);
+  int y = luaL_checkinteger(L, 3);
+  int w = luaL_checkinteger(L, 4);
+  int h = luaL_checkinteger(L, 5);
+  const char* label = luaL_checkstring(L, 6);
+  lua_pushinteger(L, window::AddGroupBox(win, x, y, w, h, label));
+  return 1;
+}
+
+static int WindowAddComboBox(lua_State* L) {
+  auto win = GetWindow(L, 1);
+  int x = luaL_checkinteger(L, 2);
+  int y = luaL_checkinteger(L, 3);
+  int w = luaL_checkinteger(L, 4);
+  int h = luaL_checkinteger(L, 5);
+  luaL_checktype(L, 6, LUA_TTABLE);
+
+  std::vector<std::string> items;
+  lua_pushnil(L);
+  while (lua_next(L, 6)) {
+    if (lua_isstring(L, -1)) {
+      items.emplace_back(lua_tostring(L, -1));
+    }
+    lua_pop(L, 1);
+  }
+
+  lua_pushinteger(L, window::AddComboBox(win, x, y, w, h, items));
+  return 1;
+}
+
+static int WindowAddCheckBox(lua_State* L) {
+  auto win = GetWindow(L, 1);
+  int x = luaL_checkinteger(L, 2);
+  int y = luaL_checkinteger(L, 3);
+  int w = luaL_checkinteger(L, 4);
+  int h = luaL_checkinteger(L, 5);
+  const char* label = luaL_checkstring(L, 6);
+  lua_pushinteger(L, window::AddCheckBox(win, x, y, w, h, label));
+  return 1;
+}
+
+static int WindowSetCheckBoxChecked(lua_State* L) {
+  auto win = GetWindow(L, 1);
+  int id = luaL_checkinteger(L, 2);
+  bool value = lua_toboolean(L, 3);
+  window::SetCheckBoxChecked(win, id, value);
+  return 0;
+}
+
+static int WindowGetCheckBoxChecked(lua_State* L) {
+  auto win = GetWindow(L, 1);
+  int id = luaL_checkinteger(L, 2);
+  lua_pushboolean(L, window::GetCheckBoxChecked(win, id));
+  return 1;
+}
+
+static int WindowSetComboBoxSelectedIndex(lua_State* L) {
+  auto win = GetWindow(L, 1);
+  int id = luaL_checkinteger(L, 2);
+  int index = luaL_checkinteger(L, 3);
+  window::SetComboBoxSelectedIndex(win, id, index);
+  return 0;
+}
+
+static int WindowGetComboBoxSelectedIndex(lua_State* L) {
+  auto win = GetWindow(L, 1);
+  int id = luaL_checkinteger(L, 2);
+  int index = window::GetComboBoxSelectedIndex(win, id);
+  lua_pushinteger(L, index);
+  return 1;
+}
+
+static int WindowAddEditBox(lua_State* L) {
+  auto win = GetWindow(L, 1);
+  int x = luaL_checkinteger(L, 2);
+  int y = luaL_checkinteger(L, 3);
+  int w = luaL_checkinteger(L, 4);
+  int h = luaL_checkinteger(L, 5);
+  const char* text = luaL_optstring(L, 6, "");
+  bool disabled = false;
+  if (lua_gettop(L) >= 7) {
+    disabled = lua_toboolean(L, 7);
+  }
+  lua_pushinteger(L, window::AddEditBox(win, x, y, w, h, text, disabled));
+  return 1;
+}
+
+static int WindowGetEditBoxText(lua_State* L) {
+  auto win = GetWindow(L, 1);
+  int id = luaL_checkinteger(L, 2);
+  lua_pushstring(L, window::GetEditBoxText(win, id).c_str());
+  return 1;
+}
+
+static int WindowAddButton(lua_State* L) {
+  auto win = GetWindow(L, 1);
+  int x = luaL_checkinteger(L, 2);
+  int y = luaL_checkinteger(L, 3);
+  int w = luaL_checkinteger(L, 4);
+  int h = luaL_checkinteger(L, 5);
+  const char* label = luaL_checkstring(L, 6);
+  lua_pushinteger(L, window::AddButton(win, x, y, w, h, label));
+  return 1;
+}
+
 // Messagebox
 
 static int ShowMessageBox(lua_State* L) {
@@ -502,6 +691,53 @@ void Register(lua_State* L) {
   lua_setfield(L, -2, "addSubMenu");
 
   lua_setfield(L, -2, "tray");
+
+  // Window
+  lua_newtable(L);
+
+  lua_pushcfunction(L, WindowCreate);
+  lua_setfield(L, -2, "create");
+
+  lua_pushcfunction(L, WindowDestroy);
+  lua_setfield(L, -2, "destroy");
+
+  lua_pushcfunction(L, WindowShow);
+  lua_setfield(L, -2, "show");
+
+  lua_pushcfunction(L, WindowAddStatic);
+  lua_setfield(L, -2, "addStatic");
+
+  lua_pushcfunction(L, WindowAddGroupBox);
+  lua_setfield(L, -2, "addGroupBox");
+
+  lua_pushcfunction(L, WindowAddComboBox);
+  lua_setfield(L, -2, "addComboBox");
+
+  lua_pushcfunction(L, WindowAddCheckBox);
+  lua_setfield(L, -2, "addCheckBox");
+
+  lua_pushcfunction(L, WindowSetCheckBoxChecked);
+  lua_setfield(L, -2, "setCheckBoxChecked");
+
+  lua_pushcfunction(L, WindowGetCheckBoxChecked);
+  lua_setfield(L, -2, "getCheckBoxChecked");
+
+  lua_pushcfunction(L, WindowSetComboBoxSelectedIndex);
+  lua_setfield(L, -2, "setComboBoxSelectedIndex");
+
+  lua_pushcfunction(L, WindowGetComboBoxSelectedIndex);
+  lua_setfield(L, -2, "getComboBoxSelectedIndex");
+
+  lua_pushcfunction(L, WindowAddEditBox);
+  lua_setfield(L, -2, "addEditBox");
+
+  lua_pushcfunction(L, WindowGetEditBoxText);
+  lua_setfield(L, -2, "getEditBoxText");
+
+  lua_pushcfunction(L, WindowAddButton);
+  lua_setfield(L, -2, "addButton");
+
+  lua_setfield(L, -2, "window");
 
   // Messagebox
 

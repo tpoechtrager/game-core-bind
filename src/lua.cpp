@@ -17,6 +17,8 @@ static int gameStopFuncRef = LUA_REFNIL;
 static int gameForegroundRef = LUA_REFNIL;
 static int gameBackgroundRef = LUA_REFNIL;
 static int trayEventFuncRef = LUA_REFNIL;
+static int windowEventFuncRef = LUA_REFNIL;
+static int windowCloseFuncRef = LUA_REFNIL;
 
 void Init() {
   L = luaL_newstate();
@@ -198,6 +200,66 @@ void TriggerTrayEvent(int id) {
   }
 }
 
+// Window events
+
+void InitWindowCallback() {
+  windowEventFuncRef = LUA_REFNIL;
+
+  lua_getglobal(L, "gcb");
+  if (lua_istable(L, -1)) {
+    lua_getfield(L, -1, "onWindowEvent");
+    if (lua_isfunction(L, -1)) {
+      windowEventFuncRef = luaL_ref(L, LUA_REGISTRYINDEX);
+    } else {
+      lua_pop(L, 1);
+    }
+  }
+  lua_pop(L, 1);
+}
+
+void TriggerWindowEvent(window::Window* win, int id) {
+  if (windowEventFuncRef == LUA_REFNIL) return;
+
+  lua_rawgeti(L, LUA_REGISTRYINDEX, windowEventFuncRef);
+  lua_pushlightuserdata(L, win); // window pointer
+  lua_pushinteger(L, id);        // control id
+
+  if (lua_pcall(L, 2, 0, 0) != LUA_OK) {
+    const char* err = lua_tostring(L, -1);
+    printf("Error in onWindowEvent: %s\n", err);
+    lua_pop(L, 1);
+  }
+}
+
+void InitWindowCloseCallback() {
+  windowCloseFuncRef = LUA_REFNIL;
+
+  lua_getglobal(L, "gcb");
+  if (lua_istable(L, -1)) {
+    lua_getfield(L, -1, "onWindowClose");
+    if (lua_isfunction(L, -1)) {
+      windowCloseFuncRef = luaL_ref(L, LUA_REGISTRYINDEX);
+    } else {
+      lua_pop(L, 1);
+    }
+  }
+  lua_pop(L, 1);
+}
+
+void TriggerWindowCloseEvent(window::Window* win) {
+  if (windowCloseFuncRef == LUA_REFNIL) return;
+
+  lua_rawgeti(L, LUA_REGISTRYINDEX, windowCloseFuncRef);
+  lua_pushlightuserdata(L, win);
+
+  if (lua_pcall(L, 1, 0, 0) != LUA_OK) {
+    const char* err = lua_tostring(L, -1);
+    printf("Lua onWindowClose error: %s\n", err);
+    lua_pop(L, 1);
+  }
+}
+
+
 void Shutdown() {
   if (L) {
     tickFuncRef = LUA_REFNIL;
@@ -206,10 +268,14 @@ void Shutdown() {
     gameForegroundRef = LUA_REFNIL;
     gameBackgroundRef = LUA_REFNIL;
     trayEventFuncRef = LUA_REFNIL;
+    windowEventFuncRef = LUA_REFNIL;
+    windowCloseFuncRef = LUA_REFNIL;
 
     lua_close(L);
     L = nullptr;
   }
 }
+
+
 
 } // namespace lua

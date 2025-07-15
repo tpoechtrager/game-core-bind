@@ -2,6 +2,10 @@
 
 #include <string>
 
+namespace window {
+  struct Window;
+}
+
 namespace lua {
 
 // Initialize Lua state
@@ -25,6 +29,12 @@ void InitForegroundCallbacks();
 // Initialize tray event callback if present
 void InitTrayCallback();
 
+// Initialize window event callback if present
+void InitWindowCallback();
+
+// Initialize window close event callback if present
+void InitWindowCloseCallback();
+
 // Trigger registered onTick function
 void TriggerTick();
 
@@ -42,5 +52,11 @@ void TriggerGameBackground(int pid, const std::string& name, const std::string& 
 
 // Trigger onTrayEvent
 void TriggerTrayEvent(int id);
+
+// Trigger onWindowEvent
+void TriggerWindowEvent(window::Window* win, int id);
+
+// Trigger onWindowClose event
+void TriggerWindowCloseEvent(window::Window* win);
 
 } // namespace lua

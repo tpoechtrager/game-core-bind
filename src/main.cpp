@@ -11,6 +11,7 @@
 #include <string>
 #include <cstdio>
 #include "tray.h"
+#include "window.h"
 
 bool shutdownRequest = false;
 bool restartRequest = false;
@@ -24,9 +25,12 @@ struct LuaFileEntry {
 static const std::vector<LuaFileEntry> luaFiles = {
   { "gcb.lua", true },
   { "config.lua", false }, // config.lua is written automatically. Don't monitor it.
+  { "games-config.lua", true },
   { "games.lua", true },
   { "main.lua", true },
-  { "tray.lua", true }
+  { "tray.lua", true },
+  { "window.lua", true },
+  { "games-gui.lua", true}
 };
 
 static std::vector<std::time_t> timestamps;
@@ -39,6 +43,8 @@ static void LoadLua() {
   lua::InitTick();
   lua::InitForegroundCallbacks();
   lua::InitTrayCallback();
+  lua::InitWindowCallback();
+  lua::InitWindowCloseCallback();
 }
 
 static void UpdateTimestamps() {
@@ -79,6 +85,7 @@ int main() {
 
   while (!shutdownRequest && !restartRequest && !restartAsAdminRequest) {
     tray::PollTrayMessages();
+    window::PollEvents();
 
     if (counter % 100 == 0) { // Approx every second
       gamewatcher::Process();
@@ -88,6 +95,7 @@ int main() {
         printf("Lua files changed, reloading...\n");
         gamewatcher::ResetState();
         ShutdownLua();
+        window::DestroyAllWindows();
         UpdateTimestamps();
         LoadLua();
       }
@@ -99,6 +107,7 @@ int main() {
 
   gamewatcher::ResetState();
   ShutdownLua();
+  window::DestroyAllWindows();
   network::Deinit();
 
   if (restartAsAdminRequest) {

@@ -33,6 +33,7 @@
     <ClCompile Include="..\src\scheduler.cpp" />
     <ClCompile Include="..\src\tools.cpp" />
     <ClCompile Include="..\src\tray.cpp" />
+    <ClCompile Include="..\src\window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\admin.h" />
@@ -49,14 +50,7 @@
     <ClInclude Include="..\src\scheduler.h" />
     <ClInclude Include="..\src\tools.h" />
     <ClInclude Include="..\src\tray.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\config.lua" />
-    <None Include="..\custom.example.lua" />
-    <None Include="..\games.lua" />
-    <None Include="..\gcb.lua" />
-    <None Include="..\main.lua" />
-    <None Include="..\tray.lua" />
+    <ClInclude Include="..\src\window.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -111,17 +105,18 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);..\lib\x86_64\lua-5.4.8\src</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);..\lib\x86_64\lua-5.4.8\src</LibraryPath>
-    <TargetName>gcb</TargetName>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);..\lib\include\lua</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);..\lib\x86_64</LibraryPath>
+    <TargetName>gcb_console</TargetName>
     <OutDir>..\</OutDir>
     <IntDir>vcpp_obj\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);..\lib\x86_64\lua-5.4.8\src</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);..\lib\x86_64\lua-5.4.8\src</LibraryPath>
-    <TargetName>gcb</TargetName>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);..\lib\include\lua</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);..\lib\x86_64</LibraryPath>
+    <TargetName>gcb_console</TargetName>
     <IntDir>vcpp_obj\</IntDir>
+    <OutDir>..\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -185,4 +180,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <Target Name="AfterBuild">
+    <Exec Command="generate_version_and_copy.bat &quot;$(OutDir)&quot;" />
+  </Target>
 </Project>

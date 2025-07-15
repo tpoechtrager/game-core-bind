@@ -3,6 +3,8 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#else
+typedef void* HWND;
 #endif
 
 namespace messagebox {

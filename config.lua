@@ -1,7 +1,8 @@
+-- This file is generated automatically by GCB. Do not edit manually.
 Config = {
   HideConsole = true,
-  DisableDesktopEffects = true,
   EnsureRunningAsAdmin = false,
   SetCpuAffinity = true,
-  DisableNonPrimaryDisplays = false,
+  DisableDesktopEffects = true,
+  DisableNonPrimaryDisplays = true,
 }

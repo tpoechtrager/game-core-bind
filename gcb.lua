@@ -17,18 +17,6 @@ for i, ccd in ipairs(gcb.CpuInfo.ccds) do
   ))
 end
 
--- Checks if a directory exists via rename-trick
-function gcb.dirExists(path)
-  local ok, _, code = os.rename(path, path)
-  if not ok then
-    if code == 13 then -- Permission denied but exists
-      return true
-    end
-    return false
-  end
-  return true
-end
-
 -- Process Thread binding
 gcb.SET_PROCESS_THREADS_SUCCESS = 0
 gcb.SET_PROCESS_THREADS_ERROR = 1
@@ -77,12 +65,18 @@ function gcb.setProcessThreadsIfDifferent(pid, targetThreads)
 end
 
 -- Applies thread affinity based on game settings
+gcb.CoreBindingMode = {
+  STANDARD = "STANDARD",
+  X3D = "X3D",
+  NON_X3D = "NON-X3D"
+}
+
 gcb.SET_GAME_THREADS_SUCCESS = 0
 gcb.SET_GAME_THREADS_ERROR = 1
 gcb.SET_GAME_THREADS_PERMISSION_DENIED = 2
 
 function gcb.setGameThreads(pid, settings)
-  local mode = settings.Mode or "STANDARD"
+  local mode = settings.Mode or gcb.CoreBindingMode.STANDARD
   local smt = settings.SMT
   local targetThreads = {}
 
@@ -95,19 +89,20 @@ function gcb.setGameThreads(pid, settings)
     end
   end
 
-  if mode == "STANDARD" then
+  if mode == gcb.CoreBindingMode.STANDARD then
     for _, ccd in ipairs(gcb.CpuInfo.ccds) do
       addThreadRange(ccd.firstThread, ccd.lastThread, ccd.cores, ccd.threads, true)
     end
   else
     for _, ccd in ipairs(gcb.CpuInfo.ccds) do
-      if (mode == "X3D" and ccd.isX3D) or (mode == "NON-X3D" and not ccd.isX3D) then
+      if (mode == gcb.CoreBindingMode.X3D and ccd.isX3D) or
+         (mode == gcb.CoreBindingMode.NON_X3D and not ccd.isX3D) then
         addThreadRange(ccd.firstThread, ccd.lastThread, ccd.cores, ccd.threads, smt ~= false)
         break
       end
     end
 
-    if mode == "X3D" and #targetThreads == 0 and #gcb.CpuInfo.ccds > 0 then
+    if mode == gcb.CoreBindingMode.X3D and #targetThreads == 0 and #gcb.CpuInfo.ccds > 0 then
       local fallback = gcb.CpuInfo.ccds[1]
       addThreadRange(fallback.firstThread, fallback.lastThread, fallback.cores, fallback.threads, smt ~= false)
     end
@@ -127,7 +122,6 @@ function gcb.setGameThreads(pid, settings)
     return gcb.SET_GAME_THREADS_ERROR
   end
 end
-
 
 -- Applies game affinity based on settings
 gcb.SET_GAME_CPU_AFFINITY_SUCCESS = 0
@@ -210,6 +204,7 @@ gcb.saveConfig = function()
   local file = io.open("config.lua", "w")
   if not file then return false end
 
+  file:write("-- This file is generated automatically by GCB. Do not edit manually.\n")
   file:write("Config = {\n")
   for k, v in pairs(Config) do
     file:write(string.format("  %s = %s,\n", k, tostring(v)))

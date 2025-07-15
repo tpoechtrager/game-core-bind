@@ -3,7 +3,7 @@ local ID_CONFIG_DISABLE_DESKTOP_EFFECTS = 101
 local ID_CONFIG_SET_CPU_AFFINITY = 102
 local ID_CONFIG_DISABLE_NON_PRIMARY_DISPLAYS = 103
 local ID_CONFIG_ENSURE_RUNNING_AS_ADMIN = 104
-local ID_OPEN_GAMES_FILE = 200
+local ID_OPEN_GAME_GUI = 200
 local ID_VERSION_INFO = 300
 
 -- Cleanup existing tray if needed
@@ -17,8 +17,8 @@ gcb.tray.init(tooltip)
 local versionText = string.format("Version %d (%s)", gcb.version.Build, gcb.version.GitRev)
 gcb.tray.addMenuItem(versionText, ID_VERSION_INFO)
 
--- Open games.lua
-gcb.tray.addMenuItem("Open games.lua", ID_OPEN_GAMES_FILE)
+-- Open GUI
+gcb.tray.addMenuItem("Edit Games", ID_OPEN_GAME_GUI)
 
 -- Create config submenu
 local configMenu = gcb.tray.createSubMenu()
@@ -62,8 +62,12 @@ function gcb.onTrayEvent(id)
     if state and not gcb.isRunningAsAdmin() then
       gcb.restartAsAdmin()
     end
-  elseif id == ID_OPEN_GAMES_FILE then
-    gcb.runDetached("notepad.exe", "games.lua")
+  elseif id == ID_OPEN_GAME_GUI then
+    if type(showGameConfigWindow) == "function" then
+      showGameConfigWindow()
+    else
+      gcb.showMessageBox("Error", "Function 'showGameConfigWindow' is not defined.")
+    end
   elseif id == ID_VERSION_INFO then
     gcb.showMessageBox(
       "GCB Version",
