@@ -84,7 +84,7 @@ void Process() {
 
   if (Process32First(snapshot, &entry)) {
     do {
-      const games::Game* game = games::GetGameByBinary(entry.szExeFile);
+      const games::Game* game = games::GetGameByBinary(entry.szExeFile, true);
       if (game) {
         int pid = static_cast<int>(entry.th32ProcessID);
         found.push_back({ pid, game });
@@ -117,7 +117,7 @@ void Process() {
     std::getline(cmdFile, exeName);
     cmdFile.close();
 
-    const games::Game* game = games::GetGameByBinary(exeName);
+    const games::Game* game = games::GetGameByBinary(exeName, true);
     if (game) {
       int pid = std::stoi(pidStr);
       found.push_back({ pid, game });

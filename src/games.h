@@ -15,6 +15,6 @@ void ClearList();
 void AddGame(const std::string& name, const std::string& binary);
 
 // Returns pointer to Game if binary matches, otherwise nullptr
-const Game* GetGameByBinary(const std::string& binary);
+const Game* GetGameByBinary(const std::string& binary, bool caseInsensitive = false);
 
 } // namespace games
