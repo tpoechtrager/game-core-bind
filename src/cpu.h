@@ -6,7 +6,9 @@ constexpr int MAX_CCDS = 8;
 
 // Represents one CCD (chiplet)
 struct CCDInfo {
-  bool isX3D;
+  bool isX3D;         // AMD only
+  bool isEfficiency;  // Intel only
+  bool isLowPowerEfficiency; // Intel only
   int cores;
   int threads;
   int firstThreadNum;

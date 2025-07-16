@@ -59,6 +59,14 @@ static int GetCPUInfo(lua_State* L) {
     lua_pushboolean(L, ccd.isX3D);
     lua_settable(L, -3);
 
+    lua_pushstring(L, "isEfficiency");
+    lua_pushboolean(L, ccd.isEfficiency);
+    lua_settable(L, -3);
+
+    lua_pushstring(L, "isLowPowerEfficiency");
+    lua_pushboolean(L, ccd.isLowPowerEfficiency);
+    lua_settable(L, -3);
+
     lua_pushstring(L, "firstThread");
     lua_pushinteger(L, ccd.firstThreadNum);
     lua_settable(L, -3);

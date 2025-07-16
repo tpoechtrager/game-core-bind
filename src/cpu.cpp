@@ -15,14 +15,13 @@
 
 namespace cpu {
 
-// Model name + cores per CCD (used for detection)
-struct CCDModel {
+// Known AMD models with cores per CCD
+struct AMDModel {
   const char* name;
   int coresPerCCD;
 };
 
-// Known AMD models with 1–2 CCDs
-static constexpr std::array<CCDModel, 16> AMD_KnownCCDModels = {{
+static constexpr std::array<AMDModel, 16> AMD_KnownCCDModels = {{
   { "3950",     8 },
   { "5950",     8 },
   { "7950",     8 },
@@ -41,13 +40,15 @@ static constexpr std::array<CCDModel, 16> AMD_KnownCCDModels = {{
   { "Max 390",  6 }
 }};
 
-// Check if brand string contains known model
+// Returns CCD core count for known AMD models
 static constexpr int FindCoresPerCCD(const std::string& brandStr) {
   for (const auto& entry : AMD_KnownCCDModels)
     if (brandStr.find(entry.name) != std::string::npos)
       return entry.coresPerCCD;
   return 0;
 }
+
+#include "cpu-intel.h"
 
 CPUInfo GetCPUInfo() {
   char brand[49] = {};
@@ -77,54 +78,61 @@ CPUInfo GetCPUInfo() {
   CPUInfo info{};
   info.name = brand;
   const std::string& brandStr = info.name;
-  const int threads = static_cast<int>(std::thread::hardware_concurrency());
+  const int hwThreads = static_cast<int>(std::thread::hardware_concurrency());
 
-  info.threads = threads;
+  info.threads = hwThreads;
   info.isAMD   = brandStr.find("AMD ") != std::string::npos;
   info.isIntel = brandStr.find("Intel") != std::string::npos;
 
-  // Helper to set CCD info
-  auto setCCD = [&](int index, bool isX3D, int cores, int threads, int firstThread) {
-    info.ccds[index].isX3D          = isX3D;
-    info.ccds[index].cores          = cores;
-    info.ccds[index].threads        = threads;
-    info.ccds[index].firstThreadNum = firstThread;
-    info.ccds[index].lastThreadNum  = firstThread + threads - 1;
+  // Helper to assign a CCD
+  auto setCCD = [&](int index, bool isX3D, bool isEfficiency, bool isLowPowerEfficiency, int cores, int threads, int firstThread) {
+    info.ccds[index].isX3D                = isX3D;
+    info.ccds[index].isEfficiency         = isEfficiency;
+    info.ccds[index].isLowPowerEfficiency = isLowPowerEfficiency;
+    info.ccds[index].cores                = cores;
+    info.ccds[index].threads              = threads;
+    info.ccds[index].firstThreadNum       = firstThread;
+    info.ccds[index].lastThreadNum        = firstThread + threads - 1;
   };
 
   if (info.isAMD) {
     const bool isX3D = brandStr.find("X3D") != std::string::npos;
-    const int coresPerCcd = FindCoresPerCCD(brandStr);
+    const int coresPerCCD = FindCoresPerCCD(brandStr);
 
-    if (coresPerCcd > 0) {
-      int threadsPerCcd = coresPerCcd * 2;
+    if (coresPerCCD > 0) {
+      int threadsPerCCD = coresPerCCD * 2;
       int currentThread = 0;
-
-      // CCD 0
-      setCCD(0, isX3D, coresPerCcd, threadsPerCcd, currentThread);
+      setCCD(0, isX3D, false, false, coresPerCCD, threadsPerCCD, currentThread);
       info.numCcds = 1;
-      currentThread += threadsPerCcd;
-
-      // CCD 1 (if available)
-      if (threads > threadsPerCcd) {
-        setCCD(1, false, coresPerCcd, threadsPerCcd, currentThread);
+      currentThread += threadsPerCCD;
+      if (hwThreads > threadsPerCCD) {
+        setCCD(1, false, false, false, coresPerCCD, threadsPerCCD, currentThread);
         info.numCcds = 2;
       }
-
     } else {
-      // Unknown model, assume single CCD with threads/2 cores
-      setCCD(0, isX3D, threads / 2, threads, 0);
+      setCCD(0, isX3D, false, false, hwThreads / 2, hwThreads, 0);
       info.numCcds = 1;
     }
 
   } else if (info.isIntel) {
-    // Assume Intel has no CCDs, but reuse structure
-    setCCD(0, false, threads / 2, threads, 0);
-    info.numCcds = 1;
+    const auto* model = FindIntelModel(brandStr);
+    if (model) {
+      int currentThread = 0;
+      for (int i = 0; i < model->numCcds; ++i) {
+        const auto& ccd = model->ccds[i];
+        setCCD(i, false, ccd.isEfficiency, ccd.isLowPowerEfficiency, ccd.cores, ccd.threads, currentThread);
+        currentThread += ccd.threads;
+      }
+      info.numCcds = model->numCcds;
+    } else {
+      fprintf(stderr, "Warning: CPU '%s' not in database. P/E/LP-core count is unknown. Using fallback.\n", brandStr.c_str());
+      fprintf(stderr, "Info: Ignore this warning if you are using a CPU older than Alder Lake.\n");
+      setCCD(0, false, true, false, hwThreads / 2, hwThreads, 0);
+      info.numCcds = 1;
+    }
 
   } else {
-    // Unknown CPU, fallback
-    setCCD(0, false, threads, threads, 0);
+    setCCD(0, false, false, false, hwThreads, hwThreads, 0);
     info.numCcds = 1;
   }
 
