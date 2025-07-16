@@ -75,11 +75,19 @@ gcb.SET_GAME_THREADS_SUCCESS = 0
 gcb.SET_GAME_THREADS_ERROR = 1
 gcb.SET_GAME_THREADS_PERMISSION_DENIED = 2
 
+-- Applies thread affinity for a given process (pid) based on core binding settings.
+-- Supports the following modes:
+--   - "STANDARD": All threads across all CCDs.
+--   - "X3D": Only threads from the X3D CCD.
+--   - "NON-X3D": Only threads from the non-X3D CCD.
+-- If the requested mode cannot be satisfied (e.g. no X3D CCD present), it falls back to "STANDARD".
+
 function gcb.setGameThreads(pid, settings)
   local mode = settings.Mode or gcb.CoreBindingMode.STANDARD
   local smt = settings.SMT
   local targetThreads = {}
 
+  -- Helper to add threads from a CCD
   local function addThreadRange(first, last, cores, threads, includeSMT)
     local threadsPerCore = threads / cores
     for t = first, last do
@@ -89,22 +97,32 @@ function gcb.setGameThreads(pid, settings)
     end
   end
 
+  local matched = false
+
+  -- Handle STANDARD mode: use all threads across all CCDs
   if mode == gcb.CoreBindingMode.STANDARD then
     for _, ccd in ipairs(gcb.CpuInfo.ccds) do
       addThreadRange(ccd.firstThread, ccd.lastThread, ccd.cores, ccd.threads, true)
     end
+    matched = true
+
   else
+    -- Try to find a matching CCD
     for _, ccd in ipairs(gcb.CpuInfo.ccds) do
       if (mode == gcb.CoreBindingMode.X3D and ccd.isX3D) or
          (mode == gcb.CoreBindingMode.NON_X3D and not ccd.isX3D) then
         addThreadRange(ccd.firstThread, ccd.lastThread, ccd.cores, ccd.threads, smt ~= false)
+        matched = true
         break
       end
     end
+  end
 
-    if mode == gcb.CoreBindingMode.X3D and #targetThreads == 0 and #gcb.CpuInfo.ccds > 0 then
-      local fallback = gcb.CpuInfo.ccds[1]
-      addThreadRange(fallback.firstThread, fallback.lastThread, fallback.cores, fallback.threads, smt ~= false)
+  -- Fallback to STANDARD if no suitable CCD was found
+  if not matched then
+    print("No suitable CCD found for mode '" .. tostring(mode) .. "', falling back to STANDARD")
+    for _, ccd in ipairs(gcb.CpuInfo.ccds) do
+      addThreadRange(ccd.firstThread, ccd.lastThread, ccd.cores, ccd.threads, true)
     end
   end
 
