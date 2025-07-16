@@ -80,6 +80,8 @@ endif
 
 LDFLAGS := $(STATIC_FLAGS)
 
+LUA_LIB := -llua
+
 endif
 
 CXXFLAGS = -Wall -Wextra -O3 -fno-exceptions $(LTO_FLAGS) $(LUA_INCLUDE)
