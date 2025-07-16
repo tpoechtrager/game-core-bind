@@ -11,6 +11,13 @@ endif
 $(info PLATFORM = $(PLATFORM))
 
 LUA_VERSION = 5.4.8
+USE_STATIC_LUA ?= 0
+LTO ?= 0
+LTO_FLAGS :=
+
+ifeq ($(LTO), 1)
+  LTO_FLAGS = -flto
+endif
 
 TARGET = gcb
 TARGET_CONSOLE = gcb_console.exe
@@ -31,7 +38,13 @@ endif
 STRIP := $(shell which $(ARCH)-w64-mingw32-strip 2>/dev/null || which strip)
 
 LUA_INCLUDE := -Ilib/include/lua
-LUA_LIB := lib/$(ARCH)/lua54.dll
+
+ifeq ($(USE_STATIC_LUA), 1)
+  LUA_LIB := lib/$(ARCH)/liblua.a
+else
+  LUA_LIB := lib/$(ARCH)/lua54.dll
+endif
+
 STATIC_FLAGS := -pthread -lws2_32
 
 ifeq ($(CXX),)
@@ -69,7 +82,7 @@ LDFLAGS := $(STATIC_FLAGS)
 
 endif
 
-CXXFLAGS = -Wall -Wextra -O3 -fno-exceptions $(LUA_INCLUDE)
+CXXFLAGS = -Wall -Wextra -O3 -fno-exceptions $(LTO_FLAGS) $(LUA_INCLUDE)
 
 SRCS = src/cpu.cpp \
        src/lua.cpp \
@@ -118,7 +131,7 @@ $(TARGET): $(OBJS) $(LUA_LIB)
 %.o: %.cpp cpu.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-lib/$(ARCH)/lua54.dll:
+lib/$(ARCH)/liblua.a lib/$(ARCH)/lua54.dll:
 	@echo "Building Lua $(LUA_VERSION) for $(ARCH)..."
 	rm -rf lib/src
 	mkdir -p lib/src lib/$(ARCH) lib/include/lua
@@ -128,7 +141,7 @@ lib/$(ARCH)/lua54.dll:
 	cd lib/src && tar -xzf lua-$(LUA_VERSION).tar.gz
 
 	# Build Lua for MinGW
-	cd lib/src/lua-$(LUA_VERSION) && make mingw CC="$(CC)"
+	cd lib/src/lua-$(LUA_VERSION) && make mingw CC="$(CC) $(LTO_FLAGS)"
 
 	# Copy DLL and static libraries to lib/$(ARCH)
 	cp lib/src/lua-$(LUA_VERSION)/src/lua54.dll lib/$(ARCH)/
