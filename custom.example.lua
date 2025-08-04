@@ -7,7 +7,7 @@ end
 
 local function SetIngameMouseSensitivity(pid, name, binary)
   local dpi, pollRate
-  if name == "Cyberpunk 2077" or name == "DOOM The Dark Ages" then
+  if name == "Cyberpunk 2077" or name == "DOOM The Dark Ages" or binary == "speed2.exe" then
     dpi = 1550
     pollRate = 4000
   else

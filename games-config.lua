@@ -237,6 +237,7 @@ Games = {
   ["Need For Speed Shift 2"] = { Binary = "shift2.exe", ["Core-Binding"] = { Mode = gcb.CoreBindingMode.X3D } },
   ["Need For Speed The Run"] = { Binary = "NFSRun.exe", ["Core-Binding"] = { Mode = gcb.CoreBindingMode.X3D } },
   ["Need For Speed Unbound"] = { Binary = "NeedForSpeedUnbound.exe", ["Core-Binding"] = { Mode = gcb.CoreBindingMode.X3D } },
+  ["Need For Speed Underground 2"] = { Binary = "speed2.exe", ["Core-Binding"] = { Mode = gcb.CoreBindingMode.X3D, SMT = true }, ["Init-Wait"] = { WaitMs = 0 } },
   ["Nier Automata"] = { Binary = "NieRAutomata.exe", ["Core-Binding"] = { Mode = gcb.CoreBindingMode.X3D } },
   ["Nier Replicant"] = { Binary = "NieRReplicant.exe", ["Core-Binding"] = { Mode = gcb.CoreBindingMode.X3D } },
   ["No Mans Sky"] = { Binary = "NoMansSky.exe", ["Core-Binding"] = { Mode = gcb.CoreBindingMode.X3D } },
