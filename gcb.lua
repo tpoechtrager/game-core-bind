@@ -99,10 +99,10 @@ function gcb.setGameThreads(pid, settings)
 
   local matched = false
 
-  -- Handle STANDARD mode: use all threads across all CCDs
+  -- Handle STANDARD mode: use all CCDs with SMT according to setting
   if mode == gcb.CoreBindingMode.STANDARD then
     for _, ccd in ipairs(gcb.CpuInfo.ccds) do
-      addThreadRange(ccd.firstThread, ccd.lastThread, ccd.cores, ccd.threads, true)
+      addThreadRange(ccd.firstThread, ccd.lastThread, ccd.cores, ccd.threads, smt ~= false)
     end
     matched = true
 
@@ -122,7 +122,7 @@ function gcb.setGameThreads(pid, settings)
   if not matched then
     print("No suitable CCD found for mode '" .. tostring(mode) .. "', falling back to STANDARD")
     for _, ccd in ipairs(gcb.CpuInfo.ccds) do
-      addThreadRange(ccd.firstThread, ccd.lastThread, ccd.cores, ccd.threads, true)
+      addThreadRange(ccd.firstThread, ccd.lastThread, ccd.cores, ccd.threads, smt ~= false)
     end
   end
 
